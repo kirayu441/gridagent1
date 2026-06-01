@@ -1,0 +1,176 @@
+{
+  "module": "GNN Early Warning",
+  "inputs": {
+    "grid": "C:\\Users\\yuhan\\Desktop\\gridagent1\\data_final\\ieee118_n60\\grid_topology.json",
+    "aligned": "C:\\Users\\yuhan\\Desktop\\gridagent1\\data_final\\formal_guangdong_2024\\aligned_merged.csv",
+    "failure_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\component_failure_probability\\ieee118_n60\\line_failure_timeseries_schloemer.csv",
+    "contingency_tensor": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\spatiotemporal_contingency\\ieee118_n60_wangqmc\\contingency_tensor_wang_qmc.npy",
+    "load_priority_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\load_prioritization_scheduling\\formal2024\\load_bus_priority_profile.csv"
+  },
+  "horizon": {
+    "start_index": 0,
+    "end_index_exclusive": 24,
+    "start_timestamp": "2024-09-01 00:00:00",
+    "end_timestamp": "2024-09-01 23:00:00",
+    "hours": 24
+  },
+  "training": {
+    "epochs_requested": 5,
+    "epochs_effective": 5,
+    "best_val_mse": 0.0007678839028812945,
+    "train_split_count": 50,
+    "val_split_count": 22,
+    "model_variant": "metapath_v1",
+    "optimizer": {
+      "lr": 0.006999999999999999,
+      "weight_decay": 5e-05
+    },
+    "train_metrics": {
+      "mae": 0.02747742090894971,
+      "rmse": 0.027489660515361357,
+      "brier": 0.0007556814352498172
+    },
+    "val_metrics": {
+      "mae": 0.027701552340966575,
+      "rmse": 0.0277107186487798,
+      "brier": 0.0007678839280318326
+    },
+    "history": [
+      {
+        "epoch": 1.0,
+        "train_mse": 0.2587127387523651,
+        "val_mse": 0.10437984019517899
+      },
+      {
+        "epoch": 2.0,
+        "train_mse": 0.10447748005390167,
+        "val_mse": 0.04883797466754913
+      },
+      {
+        "epoch": 3.0,
+        "train_mse": 0.04890876263380051,
+        "val_mse": 0.01760846935212612
+      },
+      {
+        "epoch": 4.0,
+        "train_mse": 0.01852731592953205,
+        "val_mse": 0.004666789434850216
+      },
+      {
+        "epoch": 5.0,
+        "train_mse": 0.005215962417423725,
+        "val_mse": 0.0007678839028812945
+      }
+    ],
+    "metapath_attention_mean": {
+      "share_bus": 0.26985712514983284,
+      "two_hop_topology": 0.17445212892360157,
+      "source_bridge": 0.2838696406947242,
+      "primary_load_bridge": 0.27182110647360486
+    },
+    "metapath_topk": 4,
+    "metapath_gate_mean": 0.28195302353964913
+  },
+  "fit_quality": {
+    "train": {
+      "mae": 0.02747742090894971,
+      "rmse": 0.027489660515361357,
+      "brier": 0.0007556814352498172
+    },
+    "validation": {
+      "mae": 0.027701552340966575,
+      "rmse": 0.0277107186487798,
+      "brier": 0.0007678839280318326
+    }
+  },
+  "modeling": {
+    "metapath_v1_enabled": true,
+    "metapath_topk": 4,
+    "run_baseline_comparison": true
+  },
+  "risk_thresholds": {
+    "high": 0.7,
+    "medium": 0.4,
+    "hour_trigger": 0.35
+  },
+  "calibration": {
+    "risk_mean_floor": 0.18,
+    "risk_mean_cap": 0.55,
+    "calibrated_hourly_risk_mean": 0.20951835304969338,
+    "calibrated_hourly_risk_min": 0.09968943855877627,
+    "calibrated_hourly_risk_max": 0.29233239278417084
+  },
+  "scenario_sampling": {
+    "intensity_distribution": "Beta(alpha,beta)",
+    "alpha": 2.0,
+    "beta": 6.0
+  },
+  "mc_scenarios": 200,
+  "outputs": {
+    "line_risk_prediction_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_smoke\\line_risk_prediction.csv",
+    "nk_failure_risk_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_smoke\\nk_failure_risk.csv",
+    "critical_load_risk_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_smoke\\critical_load_risk.csv",
+    "calibrated_hourly_line_probability_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_smoke\\calibrated_hourly_line_probability.csv",
+    "metapath_attention_summary_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_smoke\\metapath_attention_summary.csv"
+  },
+  "comparison": {
+    "enabled": true,
+    "comparison_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_smoke\\model_comparison.csv",
+    "comparison_model_line_risk_prediction_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_smoke\\baseline_line_risk_prediction.csv",
+    "comparison_model_calibrated_hourly_line_probability_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_smoke\\baseline_calibrated_hourly_line_probability.csv",
+    "comparison_model_training": {
+      "epochs_requested": 5,
+      "epochs_effective": 5,
+      "best_val_mse": 0.0002474009233992547,
+      "train_split_count": 50,
+      "val_split_count": 22,
+      "model_variant": "baseline_gnn",
+      "optimizer": {
+        "lr": 0.01,
+        "weight_decay": 0.0001
+      },
+      "train_metrics": {
+        "mae": 0.015511848495532108,
+        "rmse": 0.015530011856203898,
+        "brier": 0.00024118126825383365
+      },
+      "val_metrics": {
+        "mae": 0.015708510635123896,
+        "rmse": 0.015728984159394607,
+        "brier": 0.00024740094268648643
+      },
+      "history": [
+        {
+          "epoch": 1.0,
+          "train_mse": 0.254842072725296,
+          "val_mse": 0.11292702704668045
+        },
+        {
+          "epoch": 2.0,
+          "train_mse": 0.11432788521051407,
+          "val_mse": 0.035972222685813904
+        },
+        {
+          "epoch": 3.0,
+          "train_mse": 0.03675397112965584,
+          "val_mse": 0.007455304265022278
+        },
+        {
+          "epoch": 4.0,
+          "train_mse": 0.007877036929130554,
+          "val_mse": 0.0012873291270807385
+        },
+        {
+          "epoch": 5.0,
+          "train_mse": 0.0014662172179669142,
+          "val_mse": 0.0002474009233992547
+        }
+      ]
+    },
+    "winner_by_metric": {
+      "val_mae": "baseline_gnn",
+      "horizon_mae": "baseline_gnn",
+      "best_val_mse": "baseline_gnn"
+    }
+  }
+}

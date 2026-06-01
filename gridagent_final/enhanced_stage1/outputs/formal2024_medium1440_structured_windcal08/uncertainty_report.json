@@ -1,0 +1,70 @@
+{
+  "dataset": "formal2024_medium1440_structured_windcal08",
+  "method": "Structured Conditional Rolling DPGMM + KMeans(nearest-to-centroid representative)",
+  "input": {
+    "dpgmm_input": "D:\\gridagent1\\gridagent_final\\enhanced_stage1\\inputs\\DPGMM_input.guangdong2024.csv",
+    "trim_input": "D:\\gridagent1\\gridagent_final\\enhanced_stage1\\inputs\\TRIM_input.guangdong2024.csv"
+  },
+  "series_metadata": {
+    "wind_columns": [
+      "wind_renewables_ninja_wind_electricity"
+    ],
+    "pv_columns": [
+      "pv_renewables_ninja_pv_electricity"
+    ],
+    "original_rows": 8784,
+    "used_rows": 1440,
+    "start": "2024-01-01 00:00:00",
+    "end": "2024-02-29 23:00:00"
+  },
+  "model_params": {
+    "window_radius": 24,
+    "max_components": 8,
+    "max_iter": 150,
+    "shared_block_hours": 1,
+    "seed": 42,
+    "n_sampled_scenarios": 60,
+    "n_typical_scenarios": 10,
+    "covariance_reg": 1e-06,
+    "transition_dimension": 4,
+    "normalization": "per-variable max scaling from historical series",
+    "initialization": "sample first hour from first local window",
+    "pv_night_rule": "set PV to 0 using month-hour daylight mask derived from historical PV quantiles",
+    "representative_scenario_rule": "nearest-to-centroid sampled trajectory",
+    "window_selection": "same-hour seasonal window with PV day/night consistency and contiguous fallback",
+    "season_day_band": 30,
+    "hour_band": 0,
+    "min_structured_window": 30,
+    "wind_calibration": "global moment calibration",
+    "wind_calibration_shrink": 0.8
+  },
+  "metrics": {
+    "history": {
+      "wind_mean": 0.23529517483321832,
+      "wind_std": 0.22113985924548066,
+      "pv_mean": 0.20358392213909668,
+      "pv_std": 0.2907139881360445,
+      "wind_pv_corr": -0.18295664029798858,
+      "wind_ramp_std": 0.05410596358263273,
+      "pv_ramp_std": 0.10571431279878772
+    },
+    "sampled": {
+      "wind_mean": 0.23529517483321835,
+      "wind_std": 0.17691105101838112,
+      "pv_mean": 0.20132356979444196,
+      "pv_std": 0.2861860579851699,
+      "wind_pv_corr": -0.19090614410843468,
+      "wind_90pct_coverage": 0.7131944444444445,
+      "pv_90pct_coverage": 0.9340277777777778,
+      "wind_ramp_std": 0.04335137453233238,
+      "pv_ramp_std": 0.10407962756101852
+    },
+    "typical_weighted": {
+      "scenario_count": 10,
+      "wind_mean": 0.21074421125088327,
+      "wind_std": 0.1658097343064266,
+      "pv_mean": 0.20299429380475537,
+      "pv_std": 0.2874717652148255
+    }
+  }
+}

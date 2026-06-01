@@ -1,0 +1,2590 @@
+{
+  "build_dataset.py": {
+    "functions": [
+      "sanitize_column_name",
+      "load_config",
+      "find_time_column",
+      "normalize_index_timezone",
+      "read_csv_timeseries",
+      "infer_netcdf_time_variable",
+      "read_netcdf_timeseries",
+      "load_timeseries_file",
+      "classify_wind_or_pv",
+      "split_generation_and_weather_columns",
+      "collect_source_frames",
+      "align_frames",
+      "normalize_frame",
+      "calendar_features",
+      "build_grid_from_csv",
+      "load_grid_topology",
+      "build_time_index",
+      "ensure_output_dirs",
+      "save_outputs",
+      "make_integrity_report",
+      "parse_args",
+      "main"
+    ],
+    "classes": [
+      "PipelineArtifacts"
+    ],
+    "arg_count": 1,
+    "args": [
+      {
+        "flags": [
+          "--config"
+        ],
+        "default": "scripts/dataset_config.example.json",
+        "type": null,
+        "help": "配置文件路径，默认 scripts/dataset_config.example.json",
+        "action": null
+      }
+    ]
+  },
+  "build_ieee_subgrid.py": {
+    "functions": [
+      "project_root",
+      "parse_args",
+      "get_case_network",
+      "map_sgen_type",
+      "local_xy_to_latlon",
+      "parse_optional_float",
+      "build_bus_graph",
+      "get_source_buses",
+      "choose_seed_bus",
+      "bfs_pick_connected_nodes",
+      "build_positions_for_buses",
+      "edge_capacity_mw_from_line",
+      "edge_capacity_mw_from_trafo",
+      "edge_length_km_from_line",
+      "geo_distance_km",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 8,
+    "args": [
+      {
+        "flags": [
+          "--case"
+        ],
+        "default": "case118",
+        "type": null,
+        "help": "Pandapower network case function name.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--target-nodes"
+        ],
+        "default": 60,
+        "type": "int",
+        "help": "Target node count in extracted subgrid.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed-bus"
+        ],
+        "default": -1,
+        "type": "int",
+        "help": "Optional start bus id. -1 means auto.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--layout-seed"
+        ],
+        "default": 42,
+        "type": "int",
+        "help": "Seed for synthetic geo layout.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--anchor-lat"
+        ],
+        "default": 23.1291,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--anchor-lon"
+        ],
+        "default": 113.2644,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--unit-km-per-local"
+        ],
+        "default": 3.0,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-grid"
+        ],
+        "default": "data_final/ieee118_n60/grid_topology.json",
+        "type": null,
+        "help": null,
+        "action": null
+      }
+    ]
+  },
+  "component_failure_probability.py": {
+    "functions": [
+      "estimate_rmax_km",
+      "latlon_delta_km",
+      "local_xy_to_latlon",
+      "_circular_vector_with_inflow",
+      "_moving_vector",
+      "batts_model_components",
+      "schloemer_model_components",
+      "typhoon_wind_speed_gradient",
+      "boundary_layer_and_gust_correction",
+      "_alpha_uneven_coefficient",
+      "line_wind_load_n",
+      "tower_wind_load_kn",
+      "stress_strength_failure_probability",
+      "line_failure_probability_series_system",
+      "make_bus_coordinates",
+      "derive_design_parameters",
+      "parse_optional_float",
+      "load_line_assets",
+      "build_typhoon_track",
+      "compute_line_failure_timeseries",
+      "summarize_model",
+      "parse_args",
+      "main"
+    ],
+    "classes": [
+      "TyphoonState",
+      "LineAsset"
+    ],
+    "arg_count": 11,
+    "args": [
+      {
+        "flags": [
+          "--grid"
+        ],
+        "default": "data_final/formal_guangdong_2024/grid_topology.json",
+        "type": null,
+        "help": "Path to grid topology json.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-dir"
+        ],
+        "default": "results/component_failure_probability/formal2024",
+        "type": null,
+        "help": "Output directory.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--model"
+        ],
+        "default": "both",
+        "type": null,
+        "help": "Wind field model.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--start-time"
+        ],
+        "default": "2024-09-01 00:00:00",
+        "type": null,
+        "help": "Typhoon track start time.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--hours"
+        ],
+        "default": 72,
+        "type": "int",
+        "help": "Typhoon duration in hours.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--center-lat"
+        ],
+        "default": 23.1291,
+        "type": "float",
+        "help": "Grid center latitude.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--center-lon"
+        ],
+        "default": 113.2644,
+        "type": "float",
+        "help": "Grid center longitude.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--intensity-scale"
+        ],
+        "default": 1.0,
+        "type": "float",
+        "help": "Typhoon intensity scale.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--move-dir-deg"
+        ],
+        "default": 300.0,
+        "type": "float",
+        "help": "Typhoon moving direction.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--move-speed-ms"
+        ],
+        "default": 6.0,
+        "type": "float",
+        "help": "Typhoon moving speed.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--design-scale"
+        ],
+        "default": 1.0,
+        "type": "float",
+        "help": "Design strength scale.",
+        "action": null
+      }
+    ]
+  },
+  "dispatch_optimization_module.py": {
+    "functions": [
+      "project_root",
+      "parse_optional_float",
+      "ewm_topsis",
+      "calc_rapidity",
+      "load_grid",
+      "parse_capacity_list",
+      "derive_load_priority_map",
+      "load_failure_timestamps",
+      "load_trim_series",
+      "distribute_load_to_buses",
+      "distribute_renewable_to_buses",
+      "load_line_risk",
+      "build_lines",
+      "build_units",
+      "ensure_capacity_margin",
+      "load_uncertainty_scenarios",
+      "build_stochastic_and_robust_sets",
+      "build_inputs",
+      "_solve_milp",
+      "_core_sets",
+      "solve_scuc",
+      "_add_base_commitment_constraints",
+      "solve_stochastic_uc",
+      "solve_robust_uc",
+      "_extract_line_flow_and_limits",
+      "compute_metrics",
+      "load_warning_context",
+      "load_hourly_line_risk",
+      "compute_hourly_uncertainty",
+      "route_strategy_by_context",
+      "_solution_hourly_costs",
+      "_extract_matrix",
+      "build_contextual_solution",
+      "save_unit_schedule",
+      "save_load_shedding",
+      "save_line_flow",
+      "parse_args",
+      "main"
+    ],
+    "classes": [
+      "UCUnit",
+      "UCLine",
+      "UCInputs",
+      "ModelSolution",
+      "ConstraintBuilder"
+    ],
+    "arg_count": 33,
+    "args": [
+      {
+        "flags": [
+          "--strategy-mode"
+        ],
+        "default": "contextual",
+        "type": null,
+        "help": "contextual: choose dispatch strategy by operating context.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--export-diagnostics"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Also export auxiliary model comparison diagnostics (not used for strategy decision).",
+        "action": null
+      },
+      {
+        "flags": [
+          "--grid"
+        ],
+        "default": "data_final/formal_guangdong_2024/grid_topology.json",
+        "type": null,
+        "help": "Grid topology json path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--trim-input"
+        ],
+        "default": "data_final/formal_guangdong_2024/TRIM_input.csv",
+        "type": null,
+        "help": "Trim input csv path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--failure-csv"
+        ],
+        "default": "results/component_failure_probability/formal2024/line_failure_timeseries_schloemer.csv",
+        "type": null,
+        "help": "Failure csv for timeline anchoring.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--uncertainty-dir"
+        ],
+        "default": "results/wind_pv_uncertainty/formal2024",
+        "type": null,
+        "help": "DPGMM uncertainty output directory.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--line-risk-csv"
+        ],
+        "default": "results/early_warning/formal2024/line_risk_prediction.csv",
+        "type": null,
+        "help": "Optional warning line-risk csv.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--load-priority-csv"
+        ],
+        "default": "results/load_prioritization_scheduling/formal2024/load_bus_priority_profile.csv",
+        "type": null,
+        "help": "Optional load-priority profile csv.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-dir"
+        ],
+        "default": "results/dispatch_optimization/formal2024",
+        "type": null,
+        "help": "Output directory.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--horizon-hours"
+        ],
+        "default": 24,
+        "type": "int",
+        "help": "Optimization horizon in hours.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--horizon-start-index"
+        ],
+        "default": 0,
+        "type": "int",
+        "help": "Start index on failure timeline.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--reserve-ratio"
+        ],
+        "default": 0.15,
+        "type": "float",
+        "help": "Reserve requirement ratio.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--voll"
+        ],
+        "default": 1200.0,
+        "type": "float",
+        "help": "Base VOLL coefficient.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--redispatch-penalty"
+        ],
+        "default": 30.0,
+        "type": "float",
+        "help": "Redispatch adjustment penalty.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--line-derate-coeff"
+        ],
+        "default": 0.35,
+        "type": "float",
+        "help": "Line-risk derating coefficient.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--robust-line-factor"
+        ],
+        "default": 0.9,
+        "type": "float",
+        "help": "Additional line derate factor in robust UC.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--stochastic-scenarios"
+        ],
+        "default": 6,
+        "type": "int",
+        "help": "Number of stochastic scenarios.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--robust-set-size"
+        ],
+        "default": 5,
+        "type": "int",
+        "help": "Number of robust uncertainty-set points.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--robust-wind-low"
+        ],
+        "default": 0.7,
+        "type": "float",
+        "help": "Robust lower factor for wind/pv.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--robust-wind-high"
+        ],
+        "default": 1.3,
+        "type": "float",
+        "help": "Robust upper factor for wind/pv.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--robust-load-low"
+        ],
+        "default": 0.9,
+        "type": "float",
+        "help": "Robust lower factor for load.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--robust-load-high"
+        ],
+        "default": 1.2,
+        "type": "float",
+        "help": "Robust upper factor for load.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--slack-dispatchable-capacity"
+        ],
+        "default": 1.2,
+        "type": "float",
+        "help": "Fallback dispatchable capacity at slack/ext-grid units.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--emergency-dg-capacities"
+        ],
+        "default": "0.18,0.15,0.10",
+        "type": null,
+        "help": "Comma-separated emergency DG capacities.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--time-limit-sec"
+        ],
+        "default": 45.0,
+        "type": "float",
+        "help": "MILP solver time limit per model (seconds).",
+        "action": null
+      },
+      {
+        "flags": [
+          "--mip-gap"
+        ],
+        "default": 0.02,
+        "type": "float",
+        "help": "MILP relative gap.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--stochastic-uncertainty-threshold"
+        ],
+        "default": 0.22,
+        "type": "float",
+        "help": "Threshold of hourly uncertainty to trigger stochastic UC.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--stochastic-line-risk-threshold"
+        ],
+        "default": 0.45,
+        "type": "float",
+        "help": "Hourly line risk threshold to trigger stochastic UC.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--robust-line-risk-threshold"
+        ],
+        "default": 0.72,
+        "type": "float",
+        "help": "Hourly line risk threshold to trigger robust UC.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--robust-nk-threshold"
+        ],
+        "default": 3.0,
+        "type": "float",
+        "help": "Global expected N-k fail lines threshold to trigger robust UC context.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--robust-critical-threshold"
+        ],
+        "default": 0.22,
+        "type": "float",
+        "help": "Global critical-load outage probability threshold to trigger robust UC context.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--robust-high-line-ratio-threshold"
+        ],
+        "default": 0.3,
+        "type": "float",
+        "help": "Global high-risk-line ratio threshold to trigger robust UC context.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": 42,
+        "type": "int",
+        "help": "Random seed.",
+        "action": null
+      }
+    ]
+  },
+  "download_data.py": {
+    "functions": [
+      "load_config",
+      "resolve_env_template",
+      "ensure_parent_folder",
+      "fetch_to_file",
+      "response_to_frame",
+      "split_date_chunks",
+      "request_json_with_retry",
+      "fetch_renewables_ninja_series",
+      "run_manual_downloads",
+      "run_renewables_ninja",
+      "parse_args",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 2,
+    "args": [
+      {
+        "flags": [
+          "--config"
+        ],
+        "default": "scripts/dataset_config.example.json",
+        "type": null,
+        "help": "配置文件路径，默认 scripts/dataset_config.example.json",
+        "action": null
+      },
+      {
+        "flags": [
+          "--skip-manual-downloads"
+        ],
+        "default": null,
+        "type": null,
+        "help": "跳过 manual_downloads，只执行 Renewables.ninja 下载。",
+        "action": null
+      }
+    ]
+  },
+  "export_standard_results.py": {
+    "functions": [
+      "project_root",
+      "read_json",
+      "ensure_dir",
+      "copy_csv",
+      "build_generation_schedule",
+      "build_reserve_schedule",
+      "build_load_shedding",
+      "build_wind_solar_scenarios",
+      "build_component_failure",
+      "parse_args",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 2,
+    "args": [
+      {
+        "flags": [
+          "--run-root"
+        ],
+        "default": null,
+        "type": null,
+        "help": "GridAgent framework run root.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-root"
+        ],
+        "default": "results",
+        "type": null,
+        "help": "Output root directory.",
+        "action": null
+      }
+    ]
+  },
+  "generate_mock_data.py": {
+    "functions": [
+      "load_config",
+      "ensure_dirs",
+      "build_time_index",
+      "synthesize_wind_series",
+      "synthesize_pv_series",
+      "synthesize_load_series",
+      "synthesize_weather_series",
+      "write_grid_tables",
+      "parse_args",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 2,
+    "args": [
+      {
+        "flags": [
+          "--config"
+        ],
+        "default": "scripts/dataset_config.example.json",
+        "type": null,
+        "help": "配置文件路径，默认 scripts/dataset_config.example.json",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": 2026,
+        "type": "int",
+        "help": "随机种子，默认 2026",
+        "action": null
+      }
+    ]
+  },
+  "generate_scaled_topology.py": {
+    "functions": [
+      "project_root",
+      "load_json",
+      "dump_json",
+      "line_degree",
+      "length_km_from_geo",
+      "parse_args",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 10,
+    "args": [
+      {
+        "flags": [
+          "--base-grid"
+        ],
+        "default": "data_final/formal_guangdong_2024/grid_topology.json",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-grid"
+        ],
+        "default": "data_final/scaled/g60_n75/grid_topology.json",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--tile-rows"
+        ],
+        "default": 2,
+        "type": "int",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--tile-cols"
+        ],
+        "default": 2,
+        "type": "int",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--target-lines"
+        ],
+        "default": 75,
+        "type": "int",
+        "help": "Total line count after adding tie lines.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--lat-gap"
+        ],
+        "default": 0.16,
+        "type": "float",
+        "help": "Latitude gap between tiled blocks.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--lon-gap"
+        ],
+        "default": 0.16,
+        "type": "float",
+        "help": "Longitude gap between tiled blocks.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--local-x-gap"
+        ],
+        "default": 25.0,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--local-y-gap"
+        ],
+        "default": 25.0,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed-offset"
+        ],
+        "default": 1000,
+        "type": "int",
+        "help": "Only used for deterministic id spaces.",
+        "action": null
+      }
+    ]
+  },
+  "gnn_warning_module.py": {
+    "functions": [
+      "project_root",
+      "parse_optional_float",
+      "minmax_scale",
+      "minmax_scale_global",
+      "find_column",
+      "load_grid_topology",
+      "load_failure_features",
+      "load_contingency_labels",
+      "load_time_features",
+      "build_load_type_map",
+      "build_node_coordinate_array",
+      "build_spatial_influence",
+      "normalize_factor_by_weights",
+      "build_bus_to_lines",
+      "build_line_graph",
+      "rank_and_pack_neighbors",
+      "build_fixed_metapath_tensors",
+      "build_dataset",
+      "compute_risk_weight_tensor",
+      "weighted_mse_loss",
+      "evaluate_prob_metrics",
+      "train_gnn",
+      "classify_risk_level",
+      "build_line_risk_prediction",
+      "sample_outage_paths",
+      "build_nk_failure_risk",
+      "compute_critical_load_risk",
+      "export_node_weather_artifacts",
+      "parse_args",
+      "calibrate_hourly_probability",
+      "run_warning_variant",
+      "main"
+    ],
+    "classes": [
+      "WarningDataset",
+      "GraphMessageLayer",
+      "LineRiskGNN",
+      "MetaPathSemanticBlock",
+      "LineRiskMetaPathGNN"
+    ],
+    "arg_count": 34,
+    "args": [
+      {
+        "flags": [
+          "--grid"
+        ],
+        "default": "data_final/formal_guangdong_2024/grid_topology.json",
+        "type": null,
+        "help": "Grid topology json path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--aligned"
+        ],
+        "default": "data_final/formal_guangdong_2024/aligned_merged.csv",
+        "type": null,
+        "help": "Aligned wind/pv/load time-series csv path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--failure-csv"
+        ],
+        "default": "results/component_failure_probability/formal2024/line_failure_timeseries_schloemer.csv",
+        "type": null,
+        "help": "Line failure timeseries csv.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--contingency-tensor"
+        ],
+        "default": "results/spatiotemporal_contingency/formal2024_schloemer72h/contingency_tensor_wang_qmc.npy",
+        "type": null,
+        "help": "Contingency tensor npy for supervision labels.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--load-priority-csv"
+        ],
+        "default": "results/load_prioritization_scheduling/formal2024/load_bus_priority_profile.csv",
+        "type": null,
+        "help": "Optional load priority profile csv.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-dir"
+        ],
+        "default": "results/early_warning/formal2024",
+        "type": null,
+        "help": "Output directory.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--horizon-hours"
+        ],
+        "default": 24,
+        "type": "int",
+        "help": "Warning horizon in hours.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--horizon-start-index"
+        ],
+        "default": 0,
+        "type": "int",
+        "help": "Start index in timeline for warning horizon.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--train-ratio"
+        ],
+        "default": 0.7,
+        "type": "float",
+        "help": "Training split ratio in time axis.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--hidden-dim"
+        ],
+        "default": 64,
+        "type": "int",
+        "help": "Hidden dimension for GNN.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--epochs"
+        ],
+        "default": 600,
+        "type": "int",
+        "help": "Max training epochs.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--lr"
+        ],
+        "default": 0.01,
+        "type": "float",
+        "help": "Learning rate.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--weight-decay"
+        ],
+        "default": 0.0001,
+        "type": "float",
+        "help": "Weight decay.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--mc-scenarios"
+        ],
+        "default": 3000,
+        "type": "int",
+        "help": "Monte Carlo scenario count for warning risk outputs.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-high-threshold"
+        ],
+        "default": 0.7,
+        "type": "float",
+        "help": "High risk threshold for line risk level.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-medium-threshold"
+        ],
+        "default": 0.4,
+        "type": "float",
+        "help": "Medium risk threshold for line risk level.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--hour-trigger-threshold"
+        ],
+        "default": 0.35,
+        "type": "float",
+        "help": "Per-hour trigger threshold for predicted fail hour.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-mean-floor"
+        ],
+        "default": 0.18,
+        "type": "float",
+        "help": "Lower bound of calibrated hourly risk mean.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-mean-cap"
+        ],
+        "default": 0.55,
+        "type": "float",
+        "help": "Upper bound of calibrated hourly risk mean.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--scenario-intensity-alpha"
+        ],
+        "default": 2.0,
+        "type": "float",
+        "help": "Alpha of Beta distribution for scenario disturbance intensity.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--scenario-intensity-beta"
+        ],
+        "default": 6.0,
+        "type": "float",
+        "help": "Beta of Beta distribution for scenario disturbance intensity.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--metapath-topk"
+        ],
+        "default": 6,
+        "type": "int",
+        "help": "Top-k neighbors kept for each fixed metapath in V1.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--metapath-v1-enabled"
+        ],
+        "default": true,
+        "type": null,
+        "help": "Enable fixed-metapath semantic-attention V1 model.",
+        "action": "BooleanOptionalAction"
+      },
+      {
+        "flags": [
+          "--run-baseline-comparison"
+        ],
+        "default": false,
+        "type": null,
+        "help": "Run an additional baseline model and export comparison files.",
+        "action": "BooleanOptionalAction"
+      },
+      {
+        "flags": [
+          "--risk-weight-alpha"
+        ],
+        "default": 2.0,
+        "type": "float",
+        "help": "Continuous risk weight coefficient in weighted MSE objective.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-weight-beta"
+        ],
+        "default": 4.0,
+        "type": "float",
+        "help": "Step risk weight coefficient for labels >= risk-weight-threshold.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-weight-threshold"
+        ],
+        "default": 0.1,
+        "type": "float",
+        "help": "Threshold used by risk-weight-beta indicator term.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-weight-on-metapath-only"
+        ],
+        "default": true,
+        "type": null,
+        "help": "Apply risk-weighted loss only to MetaPath model when baseline comparison is enabled.",
+        "action": "BooleanOptionalAction"
+      },
+      {
+        "flags": [
+          "--metapath-gate-reg-lambda"
+        ],
+        "default": 0.0008,
+        "type": "float",
+        "help": "L2 regularization coefficient on MetaPath gate to avoid over-correction.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--metapath-attention-entropy-reg-lambda"
+        ],
+        "default": 0.0,
+        "type": "float",
+        "help": "Entropy regularization coefficient on MetaPath attention to mitigate single-path collapse.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--metapath-warmup-epochs"
+        ],
+        "default": 35,
+        "type": "int",
+        "help": "Epochs for linear warmup of MetaPath residual correction.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--high-risk-threshold"
+        ],
+        "default": 0.1,
+        "type": "float",
+        "help": "Threshold used to compute high-risk subset metrics.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--top-risk-quantile"
+        ],
+        "default": 0.9,
+        "type": "float",
+        "help": "Quantile used for top-risk subset metrics.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": 42,
+        "type": "int",
+        "help": "Random seed.",
+        "action": null
+      }
+    ]
+  },
+  "gridagent_framework.py": {
+    "functions": [
+      "project_root",
+      "resolve_path",
+      "run_cmd",
+      "maybe_run",
+      "calc_rapidity_sustainability",
+      "ewm_topsis",
+      "evaluate_candidate_run",
+      "score_candidates",
+      "reserve_tag",
+      "pick_cloud_candidates",
+      "run_wind_pv_stage",
+      "run_failure_stage_for_model",
+      "run_contingency_stage",
+      "run_scheduling_stage",
+      "run_assessment_stage",
+      "run_warning_stage",
+      "run_dispatch_optimization_stage",
+      "read_json",
+      "parse_args",
+      "run_baseline",
+      "run_adaptive",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 7,
+    "args": [
+      {
+        "flags": [
+          "--config"
+        ],
+        "default": "configs/gridagent_framework.formal2024.json",
+        "type": null,
+        "help": "Framework config json.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--mode"
+        ],
+        "default": "adaptive",
+        "type": null,
+        "help": "Run baseline single-chain or adaptive edge-cloud collaborative scheduling.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--run-tag"
+        ],
+        "default": "",
+        "type": null,
+        "help": "Optional output run tag. If empty, use timestamp.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": null,
+        "type": "int",
+        "help": "Optional global seed override.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--max-steps"
+        ],
+        "default": null,
+        "type": "int",
+        "help": "Optional debug truncation for time steps.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--no-reuse-existing"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Disable output cache reuse.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--dry-run"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Print commands only.",
+        "action": null
+      }
+    ]
+  },
+  "load_prioritization_scheduling.py": {
+    "functions": [
+      "project_root",
+      "parse_optional_float",
+      "parse_capacity_list",
+      "load_grid",
+      "load_contingencies",
+      "derive_load_priorities",
+      "build_load_demands",
+      "build_renewable_profiles",
+      "build_dispatchable_generators",
+      "pre_disaster_schedule",
+      "optimal_weighted_shedding",
+      "simulate_policy",
+      "parse_args",
+      "main"
+    ],
+    "classes": [
+      "DispatchableGenerator",
+      "ScenarioInputs"
+    ],
+    "arg_count": 13,
+    "args": [
+      {
+        "flags": [
+          "--grid"
+        ],
+        "default": "data_final/formal_guangdong_2024/grid_topology.json",
+        "type": null,
+        "help": "Grid topology json path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--trim-input"
+        ],
+        "default": "data_final/formal_guangdong_2024/TRIM_input.csv",
+        "type": null,
+        "help": "TRIM input csv path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--contingency-tensor"
+        ],
+        "default": "results/spatiotemporal_contingency/formal2024_schloemer72h/contingency_tensor_wang_qmc.npy",
+        "type": null,
+        "help": "Contingency tensor npy path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--failure-csv"
+        ],
+        "default": "results/component_failure_probability/formal2024/line_failure_timeseries_schloemer.csv",
+        "type": null,
+        "help": "Failure probability csv used for line ordering and timestamps.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--uncertainty-dir"
+        ],
+        "default": "results/wind_pv_uncertainty/formal2024",
+        "type": null,
+        "help": "Wind/PV uncertainty result directory.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-dir"
+        ],
+        "default": "results/load_prioritization_scheduling/formal2024",
+        "type": null,
+        "help": "Output directory.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--reserve-ratio"
+        ],
+        "default": 0.15,
+        "type": "float",
+        "help": "Reserve requirement ratio of total demand in pre-disaster scheduling.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--load-shed-cost"
+        ],
+        "default": 50.0,
+        "type": "float",
+        "help": "Load shedding cost coefficient c_L.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--slack-dispatchable-capacity"
+        ],
+        "default": 1.2,
+        "type": "float",
+        "help": "Fallback dispatchable capacity injected at bus0 if existing thermal capacity is insufficient.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--emergency-dg-capacities"
+        ],
+        "default": "0.18,0.15,0.10",
+        "type": null,
+        "help": "Comma-separated emergency DG capacities.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--priority-stress-factor"
+        ],
+        "default": 1.0,
+        "type": "float",
+        "help": "Scale factor on priority-level-1 demand share concentration (>1 means more critical-load stress).",
+        "action": null
+      },
+      {
+        "flags": [
+          "--policy-set"
+        ],
+        "default": "all",
+        "type": null,
+        "help": "Run all policy baselines or only priority_with_reserve.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": 42,
+        "type": "int",
+        "help": "Random seed.",
+        "action": null
+      }
+    ]
+  },
+  "module_sensitivity_analysis.py": {
+    "functions": [
+      "project_root",
+      "run_cmd",
+      "ewm_topsis",
+      "calc_rapidity_sustainability",
+      "influence_weights",
+      "parse_args",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 7,
+    "args": [
+      {
+        "flags": [
+          "--output-dir"
+        ],
+        "default": "results/module_sensitivity/formal2024",
+        "type": null,
+        "help": "Output directory.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--failure-models"
+        ],
+        "default": "schloemer,batts",
+        "type": null,
+        "help": "Comma-separated failure models.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--contingency-methods"
+        ],
+        "default": "wang_qmc,wang_mc,c3po_ref,trim_ref",
+        "type": null,
+        "help": "Comma-separated contingency methods.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--reserve-ratios"
+        ],
+        "default": "0.05,0.15,0.30",
+        "type": null,
+        "help": "Comma-separated reserve ratios.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--n-scenarios"
+        ],
+        "default": 256,
+        "type": "int",
+        "help": "Scenario count for contingency generation (already generated data expected).",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": 42,
+        "type": "int",
+        "help": "Random seed.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--rerun-scheduling"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Force rerun scheduling even if output exists.",
+        "action": null
+      }
+    ]
+  },
+  "multi_criteria_resilience_assessment.py": {
+    "functions": [
+      "project_root",
+      "ensure_columns",
+      "calc_priority_indicator",
+      "calc_robustness_indicator",
+      "calc_time_series_indicators",
+      "minmax_forward",
+      "ewm_topsis",
+      "parse_args",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 3,
+    "args": [
+      {
+        "flags": [
+          "--policy-comparison"
+        ],
+        "default": "results/load_prioritization_scheduling/formal2024/policy_comparison.csv",
+        "type": null,
+        "help": "Policy comparison csv from load prioritization stage.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--worst-detail"
+        ],
+        "default": "results/load_prioritization_scheduling/formal2024/worst_scenario_shedding_detail.csv",
+        "type": null,
+        "help": "Worst scenario per-time shedding detail csv.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-dir"
+        ],
+        "default": "results/multi_criteria_resilience/formal2024",
+        "type": null,
+        "help": "Output directory.",
+        "action": null
+      }
+    ]
+  },
+  "multiscenario_fusion_experiment.py": {
+    "functions": [
+      "project_root",
+      "resolve_path",
+      "read_json",
+      "sanitize_name",
+      "parse_args",
+      "ensure_uncertainty_base",
+      "prepare_wind_pv_variants",
+      "prepare_load_scenarios",
+      "sobol_select_indices",
+      "build_environment_matrix",
+      "build_strategy_pool",
+      "main"
+    ],
+    "classes": [
+      "WindPVVariant",
+      "LoadScenario"
+    ],
+    "arg_count": 5,
+    "args": [
+      {
+        "flags": [
+          "--config"
+        ],
+        "default": "configs/multiscenario_fusion.formal2024.json",
+        "type": null,
+        "help": "Config json path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--phase"
+        ],
+        "default": "design",
+        "type": null,
+        "help": "Current executable phase. v1 supports design phase.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--run-tag"
+        ],
+        "default": "",
+        "type": null,
+        "help": "Optional run tag. If empty, use timestamp.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": null,
+        "type": "int",
+        "help": "Optional seed override.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--no-reuse-existing"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Disable reuse and rebuild prepared files.",
+        "action": null
+      }
+    ]
+  },
+  "multiscenario_fusion_run.py": {
+    "functions": [
+      "project_root",
+      "resolve_path",
+      "run_cmd",
+      "format_progress",
+      "maybe_run",
+      "calc_rapidity_sustainability",
+      "ewm_topsis",
+      "load_failure_p_line",
+      "warning_metrics",
+      "run_failure_stage",
+      "run_contingency_stage",
+      "run_scheduling_stage",
+      "parse_args",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 25,
+    "args": [
+      {
+        "flags": [
+          "--design-manifest"
+        ],
+        "default": "results/multiscenario_fusion/phase1_design/experiment_manifest.json",
+        "type": null,
+        "help": "Path to experiment_manifest.json from design phase.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-subdir"
+        ],
+        "default": "edge_eval",
+        "type": null,
+        "help": "Output subfolder under design run root.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--env-selection"
+        ],
+        "default": "shuffle",
+        "type": null,
+        "help": "How to select env cases when max-env-cases is set.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--max-env-cases"
+        ],
+        "default": 6,
+        "type": "int",
+        "help": "Limit env cases for this run.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--max-strategies"
+        ],
+        "default": 6,
+        "type": "int",
+        "help": "Limit strategies for this run.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--env-ids"
+        ],
+        "default": "",
+        "type": null,
+        "help": "Optional comma-separated env sample ids to run only specific checkpoints (e.g., S0007,S0015).",
+        "action": null
+      },
+      {
+        "flags": [
+          "--min-intensity"
+        ],
+        "default": null,
+        "type": "float",
+        "help": "Optional filter: keep env with intensity >= value.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--n-scenarios"
+        ],
+        "default": 64,
+        "type": "int",
+        "help": "Scenario count in contingency generation.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": 42,
+        "type": "int",
+        "help": "Random seed.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--start-time"
+        ],
+        "default": "2024-09-01 00:00:00",
+        "type": null,
+        "help": "Typhoon start time.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--hours"
+        ],
+        "default": 72,
+        "type": "int",
+        "help": "Typhoon duration hours.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--center-lat"
+        ],
+        "default": 23.1291,
+        "type": "float",
+        "help": "Grid center latitude.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--center-lon"
+        ],
+        "default": 113.2644,
+        "type": "float",
+        "help": "Grid center longitude.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--move-dir-deg"
+        ],
+        "default": 300.0,
+        "type": "float",
+        "help": "Typhoon moving direction.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--move-speed-ms"
+        ],
+        "default": 6.0,
+        "type": "float",
+        "help": "Typhoon moving speed.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--design-scale"
+        ],
+        "default": 1.0,
+        "type": "float",
+        "help": "Asset design scale.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--warning-end-hour"
+        ],
+        "default": -1,
+        "type": "int",
+        "help": "Warning end hour index.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--repair-hours"
+        ],
+        "default": 12,
+        "type": "int",
+        "help": "Repair hours.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--high-risk-quantile"
+        ],
+        "default": 0.9,
+        "type": "float",
+        "help": "High risk quantile.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--load-shed-cost"
+        ],
+        "default": 50.0,
+        "type": "float",
+        "help": "Load shedding cost.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--slack-dispatchable-capacity"
+        ],
+        "default": 1.2,
+        "type": "float",
+        "help": "Slack dispatchable cap.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--emergency-dg-capacities"
+        ],
+        "default": "0.18,0.15,0.10",
+        "type": null,
+        "help": "Emergency DG capacities.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--policy-set"
+        ],
+        "default": "priority_only",
+        "type": null,
+        "help": "Scheduling policy set for runtime speed/coverage tradeoff.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--no-reuse-existing"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Disable reusing existing outputs.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--dry-run"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Print commands only.",
+        "action": null
+      }
+    ]
+  },
+  "prepare_formal_sources.py": {
+    "functions": [
+      "load_config",
+      "build_time_index",
+      "to_plain_timestamp_strings",
+      "align_source_to_target_length",
+      "build_load_csv",
+      "map_sgen_type",
+      "parse_geo_point",
+      "local_xy_to_latlon",
+      "build_grid_json",
+      "parse_args",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 4,
+    "args": [
+      {
+        "flags": [
+          "--config"
+        ],
+        "default": "scripts/dataset_config.formal_guangdong_2024.json",
+        "type": null,
+        "help": "配置文件路径，默认 scripts/dataset_config.formal_guangdong_2024.json",
+        "action": null
+      },
+      {
+        "flags": [
+          "--load-url"
+        ],
+        "default": null,
+        "type": null,
+        "help": "负荷数据源 URL（默认使用 Zenodo 省级小时负荷数据）。",
+        "action": null
+      },
+      {
+        "flags": [
+          "--load-cols"
+        ],
+        "default": "GD,GX",
+        "type": null,
+        "help": "源负荷列名，逗号分隔（默认 GD,GX）。",
+        "action": null
+      },
+      {
+        "flags": [
+          "--out-cols"
+        ],
+        "default": "load_region1,load_region2",
+        "type": null,
+        "help": "输出负荷列名，逗号分隔（默认 load_region1,load_region2）。",
+        "action": null
+      }
+    ]
+  },
+  "run_end_to_end_resilience.py": {
+    "functions": [
+      "project_root",
+      "run_cmd",
+      "parse_args",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 12,
+    "args": [
+      {
+        "flags": [
+          "--grid"
+        ],
+        "default": "data_final/formal_guangdong_2024/grid_topology.json",
+        "type": null,
+        "help": "Grid topology path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--run-suffix"
+        ],
+        "default": "",
+        "type": null,
+        "help": "Optional suffix for output folders. If empty, timestamp is used.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--model"
+        ],
+        "default": "schloemer",
+        "type": null,
+        "help": "Wind field model for failure stage.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--hours"
+        ],
+        "default": 72,
+        "type": "int",
+        "help": "Typhoon duration hours in failure stage.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--start-time"
+        ],
+        "default": "2024-09-01 00:00:00",
+        "type": null,
+        "help": "Typhoon start timestamp.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--n-scenarios"
+        ],
+        "default": 256,
+        "type": "int",
+        "help": "Contingency scenario count.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--reserve-ratio"
+        ],
+        "default": 0.15,
+        "type": "float",
+        "help": "Reserve ratio in scheduling stage.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": 42,
+        "type": "int",
+        "help": "Global random seed.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--skip-failure"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Skip failure stage (use existing output directory).",
+        "action": null
+      },
+      {
+        "flags": [
+          "--skip-contingency"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Skip contingency stage.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--skip-scheduling"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Skip scheduling stage.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--skip-assessment"
+        ],
+        "default": null,
+        "type": null,
+        "help": "Skip multi-criteria assessment stage.",
+        "action": null
+      }
+    ]
+  },
+  "run_paper_comparison_experiment.py": {
+    "functions": [
+      "project_root",
+      "run_cmd",
+      "read_json",
+      "ewm_topsis",
+      "parse_args",
+      "build_uniform_priority_csv",
+      "run_dispatch_with_profile",
+      "pick_row",
+      "metric_or",
+      "to_markdown_table",
+      "append_improvement_row",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 3,
+    "args": [
+      {
+        "flags": [
+          "--framework-run-root"
+        ],
+        "default": "results/gridagent_framework/formal2024_full_baseline_20260310_233109",
+        "type": null,
+        "help": "Framework run root used as input anchor.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--config"
+        ],
+        "default": "configs/gridagent_framework.formal2024.json",
+        "type": null,
+        "help": "Framework config path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-dir"
+        ],
+        "default": "results/paper_comparison",
+        "type": null,
+        "help": "Output root for experiment artifacts.",
+        "action": null
+      }
+    ]
+  },
+  "run_warning_scale_experiments.py": {
+    "functions": [
+      "project_root",
+      "parse_int_list",
+      "parse_float_list",
+      "run_cmd",
+      "can_import_warning_deps",
+      "pick_python_exe",
+      "safe_json",
+      "pick_metric",
+      "aggregate_rows",
+      "parse_args",
+      "main"
+    ],
+    "classes": [],
+    "arg_count": 30,
+    "args": [
+      {
+        "flags": [
+          "--grid"
+        ],
+        "default": "data_final/formal_guangdong_2024/grid_topology.json",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--aligned"
+        ],
+        "default": "data_final/formal_guangdong_2024/aligned_merged.csv",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--failure-csv"
+        ],
+        "default": "results/component_failure_probability/formal2024/line_failure_timeseries_schloemer.csv",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--contingency-tensor"
+        ],
+        "default": "results/spatiotemporal_contingency/formal2024_schloemer72h/contingency_tensor_wang_qmc.npy",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--load-priority-csv"
+        ],
+        "default": "results/load_prioritization_scheduling/formal2024/load_bus_priority_profile.csv",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-root"
+        ],
+        "default": "results/early_warning",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--tag"
+        ],
+        "default": "metapath_scale",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--python-exe"
+        ],
+        "default": "",
+        "type": null,
+        "help": "Python executable for invoking gnn_warning_module.py. Empty means auto-detect.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seeds"
+        ],
+        "default": "42,43,44,45,46",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--metapath-topk-list"
+        ],
+        "default": "3,4,5",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--hidden-dim-list"
+        ],
+        "default": "64,80,96",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--epochs-list"
+        ],
+        "default": "700,900",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--lr-list"
+        ],
+        "default": "0.006,0.005",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--weight-decay-list"
+        ],
+        "default": "0.0001",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--train-ratio-list"
+        ],
+        "default": "0.7",
+        "type": null,
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--horizon-hours"
+        ],
+        "default": 24,
+        "type": "int",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--horizon-start-index"
+        ],
+        "default": 0,
+        "type": "int",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--mc-scenarios"
+        ],
+        "default": 3000,
+        "type": "int",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-high-threshold"
+        ],
+        "default": 0.7,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-medium-threshold"
+        ],
+        "default": 0.4,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--hour-trigger-threshold"
+        ],
+        "default": 0.35,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-mean-floor"
+        ],
+        "default": 0.18,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--risk-mean-cap"
+        ],
+        "default": 0.55,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--scenario-intensity-alpha"
+        ],
+        "default": 2.0,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--scenario-intensity-beta"
+        ],
+        "default": 6.0,
+        "type": "float",
+        "help": null,
+        "action": null
+      },
+      {
+        "flags": [
+          "--metapath-v1-enabled"
+        ],
+        "default": true,
+        "type": null,
+        "help": null,
+        "action": "BooleanOptionalAction"
+      },
+      {
+        "flags": [
+          "--run-baseline-comparison"
+        ],
+        "default": true,
+        "type": null,
+        "help": null,
+        "action": "BooleanOptionalAction"
+      },
+      {
+        "flags": [
+          "--reuse-existing"
+        ],
+        "default": true,
+        "type": null,
+        "help": null,
+        "action": "BooleanOptionalAction"
+      },
+      {
+        "flags": [
+          "--max-runs"
+        ],
+        "default": 0,
+        "type": "int",
+        "help": "Limit total run count. 0 means no limit.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--dry-run"
+        ],
+        "default": false,
+        "type": null,
+        "help": null,
+        "action": "BooleanOptionalAction"
+      }
+    ]
+  },
+  "spatiotemporal_contingency_generator.py": {
+    "functions": [
+      "project_root",
+      "parse_optional_float",
+      "load_failure_input",
+      "load_grid_roles",
+      "sobol_uniforms",
+      "wang_stateful_contingency",
+      "c3po_reference_contingency",
+      "trim_reference_contingency",
+      "disconnected_load_matrix",
+      "pairwise_hamming_diversity",
+      "evaluate_method",
+      "save_method_outputs",
+      "parse_args",
+      "main"
+    ],
+    "classes": [
+      "FailureInput"
+    ],
+    "arg_count": 10,
+    "args": [
+      {
+        "flags": [
+          "--failure-csv"
+        ],
+        "default": "results/component_failure_probability/formal2024/line_failure_timeseries_schloemer.csv",
+        "type": null,
+        "help": "Line failure probability timeseries csv.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--grid"
+        ],
+        "default": "data_final/formal_guangdong_2024/grid_topology.json",
+        "type": null,
+        "help": "Grid topology json path.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-dir"
+        ],
+        "default": "results/spatiotemporal_contingency/formal2024",
+        "type": null,
+        "help": "Output directory.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--methods"
+        ],
+        "default": "all",
+        "type": null,
+        "help": "Generation method set.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--n-scenarios"
+        ],
+        "default": 256,
+        "type": "int",
+        "help": "Number of generated scenarios.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": 42,
+        "type": "int",
+        "help": "Random seed.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--warning-end-hour"
+        ],
+        "default": -1,
+        "type": "int",
+        "help": "Warning end hour index for Wang stateful method. -1 means 75%% of horizon.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--repair-hours"
+        ],
+        "default": 12,
+        "type": "int",
+        "help": "Repair window for Wang stateful method.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--high-risk-quantile"
+        ],
+        "default": 0.9,
+        "type": "float",
+        "help": "Quantile threshold for high-risk coverage evaluation.",
+        "action": null
+      },
+      {
+        "flags": [
+          "--max-steps"
+        ],
+        "default": null,
+        "type": "int",
+        "help": "Use only first N steps for debugging.",
+        "action": null
+      }
+    ]
+  },
+  "wind_pv_uncertainty_modeling.py": {
+    "functions": [
+      "project_root",
+      "default_dataset_specs",
+      "sanitize_name",
+      "infer_wind_pv_columns",
+      "load_wind_pv_series",
+      "reduce_scenarios_kmeans",
+      "weighted_stats",
+      "evaluate_uncertainty_model",
+      "save_outputs",
+      "run_one_dataset",
+      "parse_args",
+      "main"
+    ],
+    "classes": [
+      "DatasetSpec",
+      "RollingDPGMM"
+    ],
+    "arg_count": 9,
+    "args": [
+      {
+        "flags": [
+          "--dataset"
+        ],
+        "default": "both",
+        "type": null,
+        "help": "选择数据集，默认 both。",
+        "action": null
+      },
+      {
+        "flags": [
+          "--output-dir"
+        ],
+        "default": "results/wind_pv_uncertainty",
+        "type": null,
+        "help": "输出目录，默认 results/wind_pv_uncertainty",
+        "action": null
+      },
+      {
+        "flags": [
+          "--window-radius"
+        ],
+        "default": 6,
+        "type": "int",
+        "help": "滚动窗口半径，默认 6。",
+        "action": null
+      },
+      {
+        "flags": [
+          "--max-components"
+        ],
+        "default": 8,
+        "type": "int",
+        "help": "DPGMM 最大分量数，默认 8。",
+        "action": null
+      },
+      {
+        "flags": [
+          "--max-iter"
+        ],
+        "default": 400,
+        "type": "int",
+        "help": "单时刻 DPGMM 最大迭代数，默认 400。",
+        "action": null
+      },
+      {
+        "flags": [
+          "--n-sampled-scenarios"
+        ],
+        "default": 200,
+        "type": "int",
+        "help": "采样场景数量，默认 200。",
+        "action": null
+      },
+      {
+        "flags": [
+          "--n-typical-scenarios"
+        ],
+        "default": 10,
+        "type": "int",
+        "help": "典型场景数量，默认 10。",
+        "action": null
+      },
+      {
+        "flags": [
+          "--seed"
+        ],
+        "default": 42,
+        "type": "int",
+        "help": "随机种子，默认 42。",
+        "action": null
+      },
+      {
+        "flags": [
+          "--max-steps"
+        ],
+        "default": null,
+        "type": "int",
+        "help": "调试参数：仅使用前 N 个时间步（默认全量）。",
+        "action": null
+      }
+    ]
+  }
+}

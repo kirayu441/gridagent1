@@ -1,0 +1,78 @@
+{
+  "module": "Dispatch Optimization",
+  "objective": "min generation + reserve + startup/shutdown + load shedding penalty",
+  "inputs": {
+    "grid": "C:\\Users\\yuhan\\Desktop\\gridagent1\\data_final\\formal_guangdong_2024\\grid_topology.json",
+    "trim_input": "C:\\Users\\yuhan\\Desktop\\gridagent1\\data_final\\formal_guangdong_2024\\TRIM_input.csv",
+    "failure_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\component_failure_probability\\formal2024\\line_failure_timeseries_schloemer.csv",
+    "uncertainty_dir": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\wind_pv_uncertainty\\formal2024",
+    "line_risk_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\formal2024\\line_risk_prediction.csv",
+    "time_horizon": {
+      "start": "2024-09-01 00:00:00",
+      "end": "2024-09-01 05:00:00",
+      "hours": 6
+    },
+    "stochastic_scenarios": 3,
+    "robust_set_size": 3
+  },
+  "solver": {
+    "time_limit_sec": 20.0,
+    "mip_gap": 0.02,
+    "seed": 42
+  },
+  "strategy_mode": "contextual",
+  "strategy_rules": {
+    "stochastic_uncertainty_threshold": 0.22,
+    "stochastic_line_risk_threshold": 0.45,
+    "robust_line_risk_threshold": 0.72,
+    "robust_nk_threshold": 3.0,
+    "robust_critical_threshold": 0.22,
+    "robust_high_line_ratio_threshold": 0.3
+  },
+  "warning_context_snapshot": {
+    "max_line_risk_prob": 0.85,
+    "high_line_ratio": 0.3333333333333333,
+    "expected_nk_fail_lines": 1.974989,
+    "max_critical_outage_prob": 0.343333
+  },
+  "selected_strategy_hours": [
+    {
+      "selected_strategy": "Robust_UC",
+      "hours_selected": 6
+    }
+  ],
+  "contextual_final_metrics": {
+    "model": "Contextual_Adaptive",
+    "total_cost": 4797.30345714007,
+    "generation_cost": 194.44929025416795,
+    "reserve_cost": 36.44326800849325,
+    "startup_shutdown_cost": 12.0,
+    "load_shedding_penalty": 4554.410898877408,
+    "EENS": 3.8244427115372024,
+    "priority_index": 0.7522625278584271,
+    "rapidity": 0.049787068367863944,
+    "reliability_score": 0.4490525868621065,
+    "total_demand": 6.941574858760621,
+    "solve_success": true,
+    "fallback_relaxation": false,
+    "solver_status": "contextual_selection"
+  },
+  "outputs": {
+    "dispatch_strategy_selection_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\dispatch_strategy_selection.csv",
+    "dispatch_active_strategy_summary_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\dispatch_active_strategy_summary.csv",
+    "contextual_dispatch_unit_schedule_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\contextual_dispatch_unit_schedule.csv",
+    "contextual_dispatch_load_shedding_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\contextual_dispatch_load_shedding.csv",
+    "contextual_dispatch_hourly_cost_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\contextual_dispatch_hourly_cost.csv",
+    "scuc_schedule_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\scuc_schedule.csv",
+    "stochastic_uc_first_stage_schedule_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\stochastic_uc_first_stage_schedule.csv",
+    "robust_uc_first_stage_schedule_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\robust_uc_first_stage_schedule.csv",
+    "scuc_load_shedding_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\scuc_load_shedding.csv",
+    "stochastic_uc_expected_load_shedding_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\stochastic_uc_expected_load_shedding.csv",
+    "robust_uc_worst_load_shedding_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\robust_uc_worst_load_shedding.csv",
+    "stochastic_uc_scenario_summary_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\stochastic_uc_scenario_summary.csv",
+    "robust_uc_scenario_summary_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\robust_uc_scenario_summary.csv",
+    "dispatch_model_comparison_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\dispatch_model_comparison.csv",
+    "dispatch_indicator_weights_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\dispatch_indicator_weights.csv",
+    "dispatch_ewm_topsis_result_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\dispatch_optimization\\formal2024_contextual_smoke\\dispatch_ewm_topsis_result.csv"
+  }
+}

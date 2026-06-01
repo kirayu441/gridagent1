@@ -1,0 +1,1391 @@
+PAGES=13
+
+===== PAGE 1 =====
+MNRAS 509, 5454–5466 (2022) https://doi.org/10.1093/mnras/stab3224 
+Advance Access publication 2021 No v ember 10 
+(H)DPGMM: a hierarchy of Dirichlet process Gaussian mixture models 
+for the inference of the black hole mass function 
+Stefano Rinaldi 1 , 2 ‹ and Walter Del Pozzo 1 , 2 
+1 Dipartimento di Fisica ‘E. Fermi’, Universit `a di Pisa, I-56127 Pisa, Italy 
+2 INFN, Sezione di Pisa, I-56127 Pisa, Italy 
+Accepted 2021 No v ember 2. in original form 2021 September 13 
+A B S T R A C T 
+We introduce (H)DPGMM, a hierarchical Bayesian non-parametric method based on the Dirichlet process Gaussian mixture 
+model, designed to infer data-driven population properties of astrophysical objects without being committal to any speciﬁc 
+physical model. We investigate the efﬁcacy of our model on simulated data sets and demonstrate its capability to reconstruct 
+correctly a variety of population models without the need of ﬁne-tuning of the algorithm. We apply our method to the problem 
+of inferring the black hole mass function given a set of gra vitational wa ve observations from LIGO and Virgo, and ﬁnd that 
+the (H)DPGMM infers a binary black hole mass function that is consistent with previous estimates without the requirement of 
+a theoretically moti v ated parametric model. Although the number of systems observed is still too small for a robust inference, 
+(H)DPGMM conﬁrms the presence of at least two distinct modes in the observed merging black hole mass function, hence 
+suggesting in a model-independent fashion the presence of at least two classes of binary black hole systems. 
+Key w ords: gravitational w aves – methods: data analysis – methods: statistical –s t a r s : black holes. 
+1 INTRODUCTION  
+Beginning with GW150914 (Abbott et al. 2016a ), LIGO (Aasi et al. 
+2015 ), and Virgo (Acernese et al. 2015 ) observed 50 compact binary 
+coalescences: 11 during the ﬁrst two observing run (O1, O2) (Abbott 
+et al. 2019a ) and 39 during the ﬁrst half of the third observing run 
+(O3a) (Abbott et al. 2021c ). 
+The detection of these coalescences opened a ne w windo w on 
+the Universe: through gra vitational wa ves (GWs), we now have 
+the possibility to look directly into previously unobserved compact 
+binaries and make measurements of the properties of these systems 
+and of the nature of the objects that compose them. 
+In particular, focusing on the binary black hole systems (BBHs), 
+we are able to measure the intrinsic parameters of the two black 
+holes, masses and spins (e.g. Abbott et al. 2021c ). The ensemble of 
+inferred BBHs properties allow the characterization of the merging 
+black hole population, hence potentially shedding light on to the 
+processes that lead to black hole binaries –o r , more broadly, black 
+holes in general – formation. The understanding of BBHs formation 
+has profound implications for stellar evolution in general. For this 
+reason, se veral ef forts have been devoted to the determination of the 
+formation channels for this kind of systems (Rodriguez et al. 2015 ; 
+Abbott et al. 2016b ; Kruckow et al. 2016 ; Rodriguez, Chatterjee & 
+Rasio 2016 ; Di Carlo et al. 2020 ; Kumamoto, Fujii & Tanikawa 
+2020 ), considering both isolated evolution and dynamical capture 
+scenarios. Gi ven the dif ferent physical processes involved in the 
+aforementioned scenarios, one expects two different BBHs mass and 
+spin distributions, resulting in an observed one given by a mixture of 
+⋆ E-mail: stefano.rinaldi@phd.unipi.it 
+the two, with weights set by the fraction of systems in the Universe 
+that have been formed accordingly. Another interesting possibility 
+is that some of the detected systems contain at least one second- 
+generation BH, hence resulting in a scenario in which at least some 
+of the observed BBHs are the result of successive mergers (Kimball 
+et al. 2021 ; Mapelli et al. 2021 ). 
+Processes that happen during the evolution of the BHs stellar 
+progenitors are believed to leave a peculiar signature in the black hole 
+mass function: this is the case, for instance, for the pair-instability 
+supernova (PISN), setting an upper limit to the progenitor star’s 
+core (Bond, Arnett & Carr 1984 ; Heger et al. 2003 ; Belczynski et al. 
+2016 ), resulting in a cut-off on the BH mass function. The very same 
+process, ultimately determined by the efﬁciency of the 12 C + α→  γ
++ 16 O nuclear reaction (e.g. Farmer et al. 2020 ) and the efﬁciency of 
+stellar winds mass loss (Belczynski et al. 2020 ), is expected to cause 
+a pile-up at ∼40 M ⊙ (Talbot & Thrane 2018 ). 
+In addition to astrophysical processes and formation channels, 
+there is the appealing possibility that some of the detected signals 
+come from primordial black holes (Franciolini et al. 2021 ), originated 
+from the collapse of o v erdensities during the radiation-dominated 
+early Universe (Carr 1975 ). 
+Current observations seem to indicate that there is evidence for the 
+fact that a single formation channel could not contribute for more than 
+70 per cent of the total observ ational samples; Ze vin et al. ( 2021 ), 
+in fact, shows that single formation channel mass functions are 
+disfa v oured against more complex models that account for multiple 
+channels. 
+From a more GW-centred perspective, the knowledge of the black 
+hole mass function can be exploited, for instance, in setting a more 
+informative prior for parameter estimation (Veitch et al. 2015 ) or for 
+cosmological analyses (Abbott et al. 2021b ). The inference of the 
+© 2021 The Author(s) 
+Published by Oxford University Press on behalf of Royal Astronomical Society 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 2 =====
+(H)DPGMM 5455 
+Hubble constant using the so-called statistical method (Schutz 1986 ; 
+Del Pozzo 2012 ; Gray et al. 2020 ; Abbott et al. 2021b ) requires, 
+while handling selection effects, the knowledge of the black hole 
+population properties. The impact of wrong population assumptions 
+on cosmological measurements are discussed in Mastrogiovanni et al. 
+( 2021 ). In addition to this, some papers suggests that some (eventual) 
+peculiar features of the mass function, especially in the high-mass 
+region, can lead to cosmological constraints: this is the case, for 
+example, of the PISN cut-off (Farr et al. 2019 ). 
+Population properties of black holes and neutron stars (NSs) 
+detected by LIGO and Virgo are discussed in Abbott et al. ( 2019b ) 
+and, more recently, in Abbott et al. ( 2021a ). These two papers 
+deal with the inference of the black hole mass distribution using 
+parametric population models. In particular, Abbott et al. ( 2021a ) 
+make use of four different population models, with different degrees 
+of complexity. Features in these models were introduced to accom- 
+modate different expected black hole formation channels. 
+Given the increasing number of GW events being detected, the 
+concrete possibility of new unforeseen classes of systems being 
+among the observed set of merging binaries, it is imperative to be able 
+to infer the population properties without being committal towards 
+speciﬁc model-dependent prescriptions. Several efforts towards this 
+direction exist (Mandel et al. 2017 ; Ay et al. 2020 ; Tiwari 2020 ; 
+Li et al. 2021 ), but, to the best of the authors’ knowledge, no full 
+non-parametric scheme has yet been proposed. 
+Non-parametric Bayesian methods are powerful tools to perform 
+inference without the need to specify a model (see Gelman et al. 2013 , 
+part V). The reader should not be confused by the nomenclature 
+non-parametric since Bayesian non-parametrics do not imply that 
+the underlying model has no parameter, but that the number of 
+parameters is, in fact, countably inﬁnite. The existence and well- 
+posedness of such schemes heavily rely on the De Finetti theorem for 
+exchangeable sequences (De Finetti 1937 ). A pure non-parametric 
+method has the interesting property of being able to reconstruct the 
+probability density just letting the data speak for themselves: the 
+retrieved distribution is the one that best describes the observations. 
+This ﬂexibility, ho we ver, comes at the cost that no direct information 
+on the underlying physics is provided by these non-parametric ap- 
+proaches, e.g. the inferred distribution is entirely phenomenological. 
+In order to explain the physics behind any kind of observed feature in 
+the reco v ered distribution, one still has to rely on parametric models 
+built on formation channels. 
+This paper presents a semi-hierarchical non-parametric technique 
+based on the Dirichlet process Gaussian mixture model (Escobar & 
+West 1995 ; Rasmussen 2000 ). Our scheme is constructed to infer 
+the population properties of merging binaries without the need to 
+specify a population model. The method we propose differs from 
+classical hierarchical Dirichlet process methods (e.g. Teh et al. 2006 ) 
+since we relax the interdependence between categories assumed 
+in the latter. This allows for a more efﬁcient exploration of the 
+posterior distribution allowing for a massively parallel ﬁrst inference 
+step. 
+The paper is organized as follows: in Section 2 we present the 
+statistical framework and we introduce the hierarchy of Dirichlet 
+process Gaussian mixture models along with an outline of how to 
+implement the inference algorithm using Collapsed Gibbs sampling, 
+presented in Section 3. In Section 4 we test our model on three 
+different simulated situations, gradually approaching one of the 
+models presented in Abbott et al. ( 2021a ). Section 5.1 discusses 
+some limitations of our non-parametric approach, while Section 5.2 
+introduces a way to handle selection effects. Finally, in Section 6 we 
+apply our model to data from GWTC–2. 
+2 A HIERARCHY  OF DIRICHLET  PROCESS  
+GAUSSIAN  MIXTURE  MODELS  
+Before introducing the Dirichlet process and our hierarchical gener- 
+alization, following Del Pozzo et al. ( 2018 ), we ﬁrst brieﬂy re vie w 
+the Dirichlet distribution. 
+2.1 Dirichlet distribution 
+Consider an experiment whose outcome can assume k known 
+dif ferent v alues, like rolling a die or tossing a coin. We are interested 
+in inferring the probability distribution for these k categories using 
+N samples. Denote with n i the number of times we observed 
+category i , while q i is the probability associated with the same 
+category. Knowing the probabilities q ≡{  q 1 , . . . , q k } , the probability 
+of observing n 1 , . . . , n k is given by a multinomial distribution: 
+p( n 1 , . . . , n k | q 1 , . . . , q k ) = 
+N! 
+n 1 ! . . . n k ! 
+k ∏  
+i= 1 
+q n i 
+i . (1) 
+Using Bayes’ theorem, we can infer the probabilities q given an array 
+of observations n ≡{  n 1 , . . . , n k } as 
+p ( q | n ) = 
+p ( n | q ) p ( q ) 
+∫ 
+p ( n | q ) p ( q ) d q 
+(2) 
+where p( q ) is the prior probability o v er the probability assignments. 
+Being conjugate to the multinomial distribution, a common prior 
+choice for this problem is the Dirichlet distribution: 
+p( q | α) = Dir ( q | α) = 
+/Gamma1( A ) 
+∏ k 
+i= 1 /Gamma1( αi ) 
+k ∏  
+i= 1 
+q αi −1 
+i , (3) 
+where we deﬁned α ≡{  α1 , . . . , αk } and A = 
+∑ k 
+i= 1 αi , with the only 
+requirement that αi > 0 ∀ i . The set of αi are called concentration 
+parameters and control the shape of the distribution, hence the 
+relative prior belief for the number of outcomes in each of the 
+categories. The concentration parameters ef fecti vely quantify how 
+we believe the probabilities q will be assigned. 
+In order to clarify this, consider a die game, where the number of 
+possible outcomes is 6. Assuming that we have no reason to believe 
+that the die is unfair, we wish to assign equal a priori probability to 
+each outcome. In this case, the concentration parameters will have 
+the same value, α1 = . . . = α6 = α. This choice leads to the so- 
+called symmetric Dirichlet distribution . A crucial role is played by 
+the magnitude of the quantity α: larger values lead to distributions 
+which are concentrated around the uniform distribution q 1 = . . . = 
+q 6 = 1/6, while α ≳ 1 implies that we still believe that every side has 
+the same probability of being rolled but we admit for the possibility 
+that our die could be unfair. 
+In fact, α = 1 corresponds to the uniform probability distribution 
+on the q simplex, meaning that every possible probability assignment 
+is a priori equally likely: we are expressing complete ignorance 
+on the state of the system, hence we are using a non-informative 
+prior (Gelman et al. 2013 ). On the other hand, α<  1 still gives a 
+symmetric distrib ution b ut its shape tells a completely different story: 
+we are sure that our die is unfair but we don’t know which side is 
+favoured . 
+We now want to explore the scenario in which we know that the 
+number 6 corresponds to the biased side of the die. In this case, 
+we would like to encode this knowledge in the prior distribution, 
+hence stepping back from the symmetric Dirichlet distribution. For 
+simplicity, we assume that only one side is fa v oured while the others 
+are equally likely. In this case, the concentration parameter associated 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 3 =====
+5456 S. Rinaldi and W. Del Pozzo 
+with the number 6 will be larger than the others. The ratio α6 / αi ̸= 6 
+expresses the disparity between q 6 and q i ̸= 6 . Also in this case, the 
+magnitude of these coefﬁcients expresses our belief in this probability 
+assignment. 
+The role of the quantity A = 
+∑ k 
+i= 1 αi is to determine how 
+concentrated (or sparse) the distribution o v er distributions is around 
+the speciﬁed prior choice for q . 
+The Dirichlet distribution has the convenient property of being 
+the conjugate prior to the multinomial likelihood (1), meaning that 
+the posterior distribution will be a Dirichlet distribution as well. This 
+property simpliﬁes both computation and the inclusion of new data in 
+the analysis (Gelman et al. 2013 ). With this prior choice, equation (2) 
+becomes 
+p( q | n , α) = 
+1 
+N 
+k ∏  
+i= 1 
+q ( n i + αi ) −1 
+i ∝ Dir ( q | n + α) , (4) 
+from which we can compute the expected value of probability q i as 
+E [ q i ] = 
+αi + n i 
+A + N 
+. (5) 
+In the limit of n i ≫ αi this result approaches the intuitively expected 
+value n i / N . 
+2.2 Dirichlet process 
+When dealing with rolling of dice, political election polls, etc., the 
+number of categories can be arbitrarily large, but it is al w ays ﬁnite 
+and known in advance. Can we somehow generalize the Dirichlet 
+distribution to allow for the possibility that the number of outcomes 
+is unknown and therefore (potentially) countably inﬁnite? 
+Such generalization is possible and was introduced in Ferguson 
+( 1973 ) with the introduction of a stochastic process in the space 
+of probability distributions: the Dirichlet process (DP). Consider an 
+experiment whose outcome is a real number in an interval I and a 
+probability density function G o v er I , G is said to be DP distributed 
+if for any partition of I I 1 , . . . , I n , 1 G = ( G ( I 1 ) , . . . , G ( I n )) is 
+distributed according to a (ﬁnite) Dirichlet distribution. Introducing 
+a base distribution H o v er I and a concentration parameter a , 
+H = ( H ( I i ) , . . . , H ( I n )) takes the role of the previously deﬁned α in 
+determining which probability distribution we expect to see a priori , 
+while a determines the concentration of the Dirichlet distribution 
+G ∼ Dir ( aH ) (6) 
+and, taking the limit of (countably) inﬁnite subintervals, the proba- 
+bility density G is distributed according to a DP: 
+G ∼ DP ( a, H ) . (7) 
+For a more formal deﬁnition of the DP, we refer the reader to Teh 
+( 2010 ). The base distribution H can be interpreted as the mean, or 
+expected value, of the DP: if one takes several realizations of the 
+stochastic process, 
+E [ G ( I i )] = H ( I i ) . (8) 
+Note that, ho we ver, it is incorrect to say that E [ G ] = H , even in 
+the limit a →  ∞  2 : this is due to the fact that the distribution G is 
+discrete while H can be (and usually is) smooth. The DP has the same 
+1 E.g. n different histogram bins. The only requirement for the partition is, 
+again, to have an arbitrarily large number of subintervals. 
+2 This limit for the concentration parameter states that we are sure that our 
+prior choice is the right one. 
+conjugacy properties of the Dirichlet distribution, hence we can use 
+it as prior distribution like in (4). Assume that we have N different 
+draws x i from G . Given these draws and the fact that G ∼ DP( a , H ), 
+the posterior distribution for G is (Teh 2010 ): 
+G | x 1 , . . . , x N ∼ DP 
+( 
+α + N, 
+α
+α + N 
+H + 
+N 
+α + N 
+∑ N 
+i= 1 δx i 
+N 
+) 
+. (9) 
+Here, δx i denotes the point mass located at x i and 
+∑ N 
+i= 1 δx i is often 
+called the empirical distribution . This expression for the posterior 
+distribution highlights also the role of the concentration parameter: 
+it can be interpreted as the weight of the prior strength expressed in 
+terms of number of draws from the underlying distribution G . If N 
+≫ α, the empirical distribution becomes a good approximation of G 
+and the inference becomes independent from the prior. Teh ( 2010 ) 
+also gives an expression for the predictive distribution of a new draw 
+x N + 1 , 
+x N+ 1 | x 1 , . . . , x N ∼ 1 
+α + N 
+( 
+αH + 
+N ∑ 
+i= 1 
+δx i 
+) 
+, (10) 
+which will be useful in what follows. 
+2.3 Dirichlet process Gaussian mixture model 
+We have seen that a realization of a DP is a discrete probability 
+distribution, hence it is atomic. Since we are interested in inferring 
+smooth probability densities, we will make use of a Dirichlet process 
+Gaussian mixture model (DPGMM), introduced in Escobar & West 
+( 1995 ). The idea is to use the DP as prior probability for the 
+parameters of a smoothing kernel function family. The probability 
+distribution for x can be written as 
+p( x) = 
+∞  ∑ 
+k= 1 
+w k N 
+(
+x| μk , σ2 
+k 
+)
+G 
+(
+w k , μk , σ2 
+k 
+)
+, (11) 
+where N denotes the normal density function, μ and σ2 are its mean 
+and variance 3 and w is the weight or mixing proportion associated 
+with the mixture component k . In particular, 
+∑ ∞  
+k= 1 w k = 1. 
+There are several ways to construct samples from a DP (Teh 2010 ), 
+depending on the property of the DP one wants to emphasize. Here we 
+follow Del Pozzo et al. ( 2018 ) in using the so-called stick-breaking 
+construction (Sethuraman 1994 ) where 
+w i = βi 
+i−1 ∏  
+j= 1 
+(1 − βj ) (12) 
+and 
+βi ∼ Beta (1 , α) , (13) 
+where α is the concentration parameter of the DP. The Beta distribu- 
+tion is 
+Beta ( β| a, b ) = 
+/Gamma1( a + b ) 
+/Gamma1 ( a) /Gamma1 ( b) 
+βa−1 (1 − β) b−1 . (14) 
+The combination of (12) and (13) leads to the Grifﬁths–Engen–
+McCloskey (GEM) distribution (Pitman 2006 ), hence we can write 
+w ∼ GEM ( α) , (15) 
+where w denotes all the weights w i . 
+3 For simplicity of notation we concentrate on a one dimensional kernel. The 
+generalization to multi v ariate normal distributions is straightforward. 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 4 =====
+(H)DPGMM 5457 
+A common and convenient choice as prior for μ and σ2 is the 
+Normal–Inverse Gamma (NIG) distribution (G ¨or ¨ur & Rasmussen 
+2010 ) 
+p( μ, σ2 | a, b, m, V ) = N( μ| m, V σ2 ) /Gamma1 −1 ( σ2 | a, b) , (16) 
+where the Inverse Gamma distribution is 
+/Gamma1 −1 ( ζ| a, b ) = 
+b a 
+/Gamma1( a) 
+e − b 
+ζ
+ζa+ 1 . (17) 
+The NIG is conjugate to the Gaussian, and its use as prior on μ and σ2 
+allows us to marginalize out analytically these parameters. Different 
+priors can be used, e.g. G ¨or ¨ur & Rasmussen ( 2010 ). In order to keep 
+things as general as possible, in the following of this section we 
+will not specify any particular distribution for the base distribution, 
+denoting it F ( μ, σ2 | /Theta1 ), where /Theta1 is any set of parameters required 
+by the prior distribution. 
+We need also to specify a prior distribution for the concentration 
+parameter α. Following G ¨or ¨ur & Rasmussen ( 2010 ), we choose the 
+Gamma distribution 
+Gamma( ζ| β, γ) = 
+γβ
+/Gamma1( β) 
+ζβ−1 e −γζ, (18) 
+in particular α ∼ Gamma( α−1 | 1, 1). 
+In summary, the prior DPGMM model can be expressed as: 
+α ∼ Gamma( α−1 | 1 , 1) , (19) 
+w ∼ GEM ( α) , (20) 
+μi , σ2 
+i ∼ F ( μ, σ2 | /Theta1 ) , (21) 
+x ∼
+∞  ∑ 
+i= 1 
+w i N 
+(
+x| μi , σ2 
+i 
+)
+. (22) 
+Let us imagine having a set of observations x = { x 1 , . . . , x N } 
+drawn from G . According to (11), each of them will be drawn from 
+one of the inﬁnite mixture components k , selected with probability 
+w k . Let us consider for a moment a simpler case in which the number 
+of components is ﬁnite, say K . In the following, w ≡{  w 1 , . . . , w K } . 
+From (1), the probability for the occupation number n k is multino- 
+mial. 
+It is useful to introduce indicator variables z ≡{  z 1 , . . . z N } that 
+denote to which mixture component each of the x i belongs to. The 
+distribution of these variables is (G ¨or ¨ur & Rasmussen 2010 ) 
+p( z | w ) = 
+K ∏  
+i= 1 
+w n i 
+i . (23) 
+Using a symmetric Dirichlet prior αi = α/ K we can integrate out the 
+mixing proportions w and obtain a probability distribution for the 
+indicator variables: 
+p( z | α) = 
+/Gamma1 ( α) 
+/Gamma1 ( N + α) 
+K ∏  
+i= 1 
+/Gamma1 ( n i + α/K) 
+/Gamma1 ( α/K) 
+. (24) 
+This probability distribution allows us to write the conditional 
+probability for a new data point x N + 1 being drawn from component 
+j : 
+p( z N+ 1 = j| z , α) = 
+p( z N+ 1 = j, z | α) 
+p( z | α) 
+= 
+n j + α/K 
+N + α . (25) 
+Now, taking the limit K →  ∞  , the conditional probability for z N + 1 
+becomes 
+p( z N+ 1 = j| z , α) = 
+n j 
+N + α (26) 
+for an already populated component and 
+p( z N+ 1 ̸= j ∀ j ∈ z | z , α) = 
+α
+N + α (27) 
+for all other empty components combined. 
+Up to now, we derived the probability for a data point to be 
+associated with a component conditioned only to the occupation 
+number of each component. Consider a different situation: we have 
+the same data set x as before, and we know from which mixture 
+component each data point comes. Let us add a new data point x N + 1 
+to our set without the information about the mixture component it has 
+been drawn from; we want to derive the conditional probability for 
+the new point to be associated with mixture component j : including 
+the parameters of the prior on μj and σ2 
+j (denoted as /Theta1 ) we get 
+p( z N+ 1 = j| x N+ 1 , x , z , α, /Theta1 ) 
+= 
+p( x N+ 1 | x , z , z N+ 1 = j, α, /Theta1 ) p( z N+ 1 = j| z , α) 
+N 
+, (28) 
+where 
+p( x N+ 1 | x , z , z N+ 1 = j, α, /Theta1 ) 
+= 
+p( x N+ 1 , x | z , z N+ 1 = j, α, /Theta1 ) 
+p( x | z , z N+ 1 = j, α, /Theta1 ) 
+= 
+∫ 
+p 
+(
+x N+ 1 , x | μj , σ2 
+j , z , z N+ 1 = j, α, /Theta1 
+)
+p( μj , σj | /Theta1 ) d μj d σ2 
+j ∫ 
+p 
+(
+x | μj , σ2 
+j , z , z N+ 1 = j, α, /Theta1 
+)
+p( μj , σj | /Theta1 ) d μj d σ2 
+j 
+. 
+(29) 
+Since we are considering Gaussian kernels, (29) becomes 
+p( x N+ 1 | x , z , z N+ 1 = j, α, /Theta1 ) 
+= 
+∫ 
+N( x N+ 1 | μj , σj ) 
+∏ 
+i| z i = j N 
+(
+x i | μj , σ2 
+j 
+)
+F 
+(
+μj , σ2 
+j | /Theta1 
+)
+d μj d σ2 
+j ∫ ∏ 
+i| z i = j N 
+(
+x i | μj , σ2 
+j 
+)
+F 
+(
+μj , σ2 
+j | /Theta1 
+)
+d μj d σ2 
+j 
+, 
+(30) 
+where i | z i = j denotes all the data points associated with component 
+j . 
+2.4 A hierarchy of DPGMMs 
+In the previous section we described the case in which our data 
+points were drawn from the underlying distribution. Making a step 
+further, imagine that we do not have direct access to x i but only to a 
+set of samples y i ≡{  y 1 , . . . , y m } around x i , drawn from a probability 
+distribution p ( x i ). In this picture, we have no direct information about 
+x , our data set being Y ≡{  y 1 , . . . , y N } . 4 In general, p ( x i ) could be 
+any probability distribution: we are interested here in the case in 
+which it can be modelled as a realization of a DP. 
+According to Teh et al. ( 2006 ), a hierarchical Dirichlet process 
+(HDP) can be speciﬁed as: 
+G 0 | γ, H ∼ DP ( γ, H ) , (31) 
+G | α, G 0 ∼ DP ( α, G 0 ) , (32) 
+Y ∼ G. (33) 
+Y is a realization of a single Dirichlet process, where x corresponds to 
+G 0 . Ho we ver, in this paper we deal with a slightly different problem: 
+4 In order to put a bit of context in this: every black hole in our Universe 
+has a mass (the DP realization x i ) and with LIGO and Virgo we are able, 
+for each gravitational wave event, to draw mass samples from their posterior 
+distribution around this mass value (the vector y i ). 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 5 =====
+5458 S. Rinaldi and W. Del Pozzo 
+each y i is a realization of a different DP, in which x i enters as a 
+parameter of the base distribution. We can specify this process as 
+G ′ ∼ DP ( γ, H ) , (34) 
+x i ∼ G ′ , (35) 
+G i | αi , G 0 , x i ∼ DP ( αi , G 0 ( x i )) , (36) 
+y i ∼ G i . (37) 
+Due to this different structure, we refer to this process as a hierarchy 
+of DPs, rather than a HDP. Since we are, once again, interested 
+in inferring smooth probability densities, we will make use, in 
+this hierarchical picture, of a smoothing Gaussian kernel: hence 
+the name hier arc hy of Diric hlet process Gaussian mixture models , 
+or (H)DPGMM. We will refer to the x -generating process as the 
+outer DPGMM while the y i -generating processes will be the inner 
+DPGMMs. 
+Given Y , equation (28) becomes 
+p( z N+ 1 = j| z , α, /Theta1, y N+ 1 , Y ) 
+= 
+∫ 
+p( z N+ 1 = j| x N+ 1 , x , z , α, /Theta1 ) 
+N+ 1 ∏  
+i= 1 
+p ( x i | θi ) p ( θi | y i ) d x i d θi , 
+(38) 
+where θi denotes all the parameters required by the probability 
+distribution. In the speciﬁc case in which we assume p ( x i ) to be 
+a realization of a DPGMM, (38) reads 
+p( z N+ 1 = j| z , α, /Theta1, y N+ 1 , Y ) 
+= 
+∫ 
+p( z N+ 1 = j| x N+ 1 , x , z , α, /Theta1 ) 
+N+ 1 ∏  
+i= 1 
+∞  ∑ 
+k= 1 
+w k,i N 
+(
+x i | μk,i , σ2 
+k,i 
+)
+×G i 
+(
+w k,i , μk,i , σ2 
+k,i | y i 
+)
+d x i d w k,i d μk,i d σ2 
+k,i . (39) 
+3 INFERENCE  USING  COLLAPSED  GIBBS  
+SAMPLING  
+The aim of this paper is to provide a method to infer the black hole 
+mass function using gravitational wave observations. The rationale 
+for our models comes from the following considerations: black hole 
+masses in our Universe can be thought as a realization of a DP whose 
+base distribution is the mass function, while single-event GW mass 
+samples are samples from the probability distribution p ( x i ). In the 
+language of the previous section, black hole masses are the vector 
+x , the mass function is the base distribution H and GW samples 
+corresponds to y i . 
+There are several way to explore DPGMMs: a possibility is to 
+use Gibbs sampling (Neal 2000 ; G ¨or ¨ur & Rasmussen 2010 ), another 
+is the variational algorithm applied in Del Pozzo et al. ( 2018 ). Our 
+method relies on the former. 
+Imagine having a set of variables ξ1 , . . . , ξn that follow a 
+multi v ariate probability distribution p ( ξ1 , . . . , ξn ) we want to draw 
+samples from. The Gibbs sampling is a Markov chain Monte 
+Carlo (MCMC) algorithm that ﬁnds its application when the joint 
+probability distribution p ( ξ1 , . . . , ξn ) is difﬁcult, computationally 
+e xpensiv e or even impossible to evaluate but, at the same time, 
+conditional probabilities 
+p( ξi | ξ−i ) = p( ξi | ξ1 , . . . , ξi−1 , ξi+ 1 , . . . , ξn ) (40) 
+are relatively easy to compute. Following G ¨or ¨ur & Rasmussen 
+( 2010 ), ξ−i denotes the vector ξ≡{  ξ1 , . . . , ξn } without the i −th 
+element ξi . 
+In a nutshell, Gibbs sampling works as follows: beginning from 
+a certain 5 initial state ¯ξ1 , . . . , ¯ξn , it iteratively draws a new ξi value 
+from the conditional (40), keeping every other ξj ﬁxed, and updates 
+its value. 
+This algorithm could require the introduction of auxiliary vari- 
+ables. Considering the case of assigning data to different components 
+of a Gaussian Mixture Model, indicator variables z and data point 
+values x alone are not enough to e v aluate the probability of a certain 
+data point to be assigned to a speciﬁc component: we have to 
+introduce the auxiliary variables that correspond to mean, variance 
+and weights of the different components of the Gaussian mixture 
+model and include them in our sampling routine. 6 
+We use a modiﬁcation of the Gibbs sampling called collapsed 
+Gibbs sampling (Liu 1994 ) in which some of the variables can be 
+marginalized out in the conditional distribution. This is the case, 
+for example, in which we specify a conjugate prior: F ( μ, σ2 | /Theta1 ) = 
+NIG( μ, σ| /Theta1 ) (G ¨or ¨ur & Rasmussen 2010 ). Here /Theta1 = { m , V , a , b } is 
+a placeholder for the parameters of the NIG prior. 
+Taking into account the situation described in Section 2.3, we 
+can draw a sample from a DP given a set of data points x and 
+their indicator variables z specifying the conditional probability 
+distribution for w , μ = { μ1 , . . . , μK } and σ2 = { σ2 
+1 , . . . , σ2 
+K } , where 
+K is the number of components with n i ≥ 1. From (4) with the 
+prescription of a symmetric Dirichlet distribution, 
+w | z , α ∼ 1 
+N 
+K ∏  
+i= 1 
+w ( n i + α/K) −1 
+i , (41) 
+while, making use of the conjugate prior, 
+μj , σj | z , x , /Theta1 ∼ NIG ( μj , σj |{ x i | z i = j} , /Theta1 ) (42) 
+for each j = 1, . . . , K . 
+The update of z i is made selecting each element of z one at a time 
+and dealing with it as it is a brand new data point which needs to 
+be assigned to a component of our mixture. Naming p i 
+j = p( z i = 
+j| x i , z −i , x −i , α, /Theta1 ) the quantity in equation (38), 
+z i | z −i ∼ Discrete 
+(
+p i 
+1 , . . . , p i 
+K , p i 
+new 
+)
+, (43) 
+where p i 
+new denotes the probability for the data point i to be assigned 
+to an empty component. Thanks to the fact that we chose the 
+conjugate prior, the integral in equation (30) is analytically treatable 
+and becomes a Student- t distribution (Murphy 2007 ). 
+Last thing we need to update is the concentration parameter 
+α. G ¨or ¨ur & Rasmussen ( 2010 ) provides the conditional likelihood 
+for α: 
+p( α| K) = 
+/Gamma1 ( α) 
+/Gamma1 ( N + α) 
+αK . (44) 
+With the inclusion of the prior, we get 
+α | z ∼ /Gamma1 ( α) 
+/Gamma1 ( N + α) 
+αK e − 1 
+α . (45) 
+As a general summary, some pseudo-code should look something 
+like this: 
+5 It could be a randomly selected state as well as some pre-determined state: 
+the initial state does not affect the algorithm outcome, as long as the chain is 
+long enough. 
+6 See equations (28) and (29): with the Gibbs sampling, the inte gral o v er μj 
+and σ2 
+j is e v aluated via the Monte Carlo integration. 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 6 =====
+(H)DPGMM 5459 
+(43)
+(41)
+(42)
+(45)
+In principle, the collapsed Gibbs sampling scheme can be applied 
+also to the situation described in Section 2.4. The main difference 
+between the algorithm we just presented and a scheme for the 
+(H)DPGMM is that the latter accounts for p ( x i ), so the parameters 
+of the N DPGMMs we use to describe these probability distributions 
+must be included in our sampling scheme. For the sake of brevity, we 
+will denote all of these parameters with /Lambda1 ≡{  /Lambda1 1 , . . . , /Lambda1 N } , where 
+/Lambda1 i ≡{  w , μ, σ2 } for a single DPGMM. 
+More than this, due to the fact that we are marginalizing o v er x i 
+with a realization from a DPGMM as probability density, choosing 
+a NIG prior on μ and σ2 does not help since it is not conjugate to 
+the likelihood anymore. We use a uniform prior in [ μmin , μmax ] and 
+[ σ2 
+min , σ2 
+max ]. Equation (42) becomes 
+μj , σj | z , /Lambda1 ∼ 1 
+N 
+n j ∏  
+i= 1 
+K i ∑ 
+k= 1 
+w k,i N 
+(
+μk,i | μj , σ2 
+j 
+)
+. (46) 
+With the notable exception that now p i 
+j is given by equation (39), 
+the conditional probability distribution for the indicator variables z is 
+the same we derived before, as well as the one for the concentration 
+parameter of the outer DPGMM γ. 
+We report here some pseudo-code for the inference of an 
+(H)DPGMM: 
+(43)
+(41)
+(47)
+(45)
+We implemented an algorithm, based on this pseudo-code, to 
+explore the (H)DPGMM. The PYTHON code is available at https: 
+// github.com/sterinaldi/ hdp-population . 
+3.1 Pr e-pr ocessing 
+The statistical method and the algorithm we presented abo v e can be 
+used to reconstruct any kind of probability density. Ho we ver, gi ven 
+the fact that we are approximating the distribution with a sum of 
+Gaussian distributions, better results are achieved with Gaussian- 
+like probability distributions. 
+In order to obtain a smoother and easier-to-approximate proba- 
+bility distribution we follow Golomb & Talbot ( 2021 ) and Talbot & 
+Thrane ( 2020 ), where the authors suggest a coordinate change to 
+map the distribution into a better behaved domain. 
+Given a uniform probability distribution for the outer variable x 
+between x min and x max , the posterior samples y i are mapped to the 
+[0,1] interval using the cumulative density function (CDF) of the 
+prior distribution F ( x ). For a uniform prior we have 
+F ( x) = 
+x − x min 
+x max − x min 
+. (47) 
+These values can be interpreted as quantiles for a Gaussian distribu- 
+tion centred in 0 with σ2 = 1. The sample ηi , which is the image of 
+the sample y i in the new space, reads 
+ηi = /Phi1 −1 ( F ( y i )) , (48) 
+where /Phi1 −1 is the probit function, the inverse CDF of the normal 
+distribution. 
+One can use the samples η≡{  η1 , . . . , ηN } in this new space to 
+approximate the probability distribution G( χ), where χ = /Phi1 −1 ( F ( x )): 
+since we are interested in approximating F( x), 
+F( x) = 
+G( χ) 
+N ( χ| 0 , 1) 
+. (49) 
+This coordinate change, ho we ver, is ill-deﬁned for x = x min , x max . 
+The prior boundaries must therefore be selected with care in order to 
+a v oid issues in proximity of these values. 
+4 SIMULA TIONS  
+In order to demonstrate the ef fecti veness of the (H)DPGMM at 
+inferring the black hole mass function, we applied our model to three 
+different sets of simulated GW observations. We did not undertake 
+the e x ercise of an end-to-end simulation campaign, but we generate 
+mock posterior distributions for each simulated GW event. In this 
+section we are not dealing with any issue related with selection 
+effects. 7 Here we assume that every event is detectable and detected, 
+postponing the discussion about how to account for selection effects 
+in the subsequent section. 
+Prior and initial state choices for the two levels of (H)DPGMM 
+are: 
+(i) Inner DPGMM: 
+(a) z initial state: the sorted mass samples are sliced in K 0 
+different components. We set K 0 = 5; 
+(b) Prior on μ and σ2 (21): NIG with parameters a = 1, V = 
+1, m = 
+∑ 
+i t i / N the mean of the samples and b = a( s 2 
+0 / 16) with 
+s 0 = ( 
+∑ 
+i ( t i − m ) 2 /( N − 1)) 1/2 . We put an upper bound on the 
+σ2 prior at σ2 
+max = s 2 
+0 / 4. 
+(ii) Outer DPGMM: 
+7 Selection effects are all these biases that ensure that a particular set of 
+samples is not representative of the true underlying distribution. Talking 
+about gravitational waves, this reﬂects the fact that our detectors have different 
+sensitivities in different regions of the population’s parameter space. 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 7 =====
+5460 S. Rinaldi and W. Del Pozzo 
+(a) z initial state: the events are sorted according to the mean 
+of the associated set of samples and then sliced in K 0 different 
+components. We set K 0 = 5; 
+(b) Prior on μ and σ2 (21): uniform on the rectangle 
+[ t min , t max ] × [ σ2 
+min , σ2 
+max ], with σ2 
+min = ( s 0 / 16) 2 , σ2 
+max = ( s 0 / 3) 2 
+and t min , t max equals to the minimum and maximum, respec- 
+tively, of all of the single event samples, while s 0 is the standard 
+deviation of these samples. 
+All the speciﬁed parameters are intended in the transformed space, 
+not in physical space. 
+Setting an upper bound on σ2 for the inner DPGMM in principle 
+prevents us from using the conjugate prior properties. Ho we ver, here 
+we are assuming that the contribution of the region with σ2 > σ2 
+max 
+to the integral in equation (30) is negligible, hence we approximately 
+reco v er the conjugacy properties. 
+This choice is moti v ated empirically; while investigating simulated 
+populations of BBHs we observed that if the variance of the inner 
+DPGMM is allowed to grow unconstrained, among the solutions 
+explored by the algorithm we found that sometimes all data points 
+would be associated with a single Gaussian component with small 
+concentration parameter, hence giving a poor ﬁt to the observed 
+posterior samples histograms. The reason for this behaviour can be 
+understood in terms of the clustering properties of the DPGMM: 
+since the DPGMM looks for the distribution which maximizes the 
+predictive likelihood (29) with the smallest number of components, 
+whenever possible it will try to put the greatest number of samples 
+in a component as large as possible, in order to keep all the samples 
+nearby the mean of the distribution. 8 
+We want to emphasize the fact that our method does not require 
+the user to predetermine and set the number of Gaussian components 
+that enters the mixture. The use of a Dirichlet process as prior allows 
+us to account for a countably inﬁnite number of components, even if 
+only a ﬁnite number of them have samples associated and hence are 
+represented: thus, the degree of freedom associated to the number of 
+active component is not ﬁxed. The value K 0 we set is an arbitrary 
+choice for the initial state. New components are added to the mixture 
+every time a sample is assigned to a new cluster or remo v ed once the 
+last sample is associated to a different cluster: hence, as long as the 
+chain is long enough, the inferred distribution is not affected by this 
+choice. We tested the robustness of this method with different K 0 and 
+we found that the results are stable against the variation of the initial 
+number of components. 
+As a measure of how much the reconstructed probability distri- 
+bution differs from the simulated one, we use the Jensen–Shannon 
+distance (see the introduction in Nielsen ( 2019 )) 
+JSD ( p|| q) = 
+√ 
+D KL ( p|| m ) + D KL ( q|| m ) 
+2 
+, (50) 
+where m ( x) = p( x ) + q( x ) 
+2 and D KL is the Kullback–Leibler diver- 
+gence (Kullback 1968 ), deﬁned as 
+D KL ( f || g) = 
+∫ ∞  
+−∞  
+f ( x ) log 
+( f ( x ) 
+g( x ) 
+)
+d x . (51) 
+4.1 DPGMM 
+As a ﬁrst check, we want to demonstrate that the inner DPGMM 
+properly reconstructs probability densities functions from sample. 
+8 Here, nearby loosely means within one or two standard deviations . 
+Table 1. Simulated probability density parameters. 
+Component w i μi [M ⊙] σi [M ⊙] 
+1 0.4 38 6 
+2 0.1 54 4 
+3 0.2 45 5 
+4 0.3 60 7 
+Figure 1. Reconstructed and simulated probability densities. The histogram 
+shows the mass samples. 
+For this purpose, we simulated a mock posterior distribution, inspired 
+by a ‘typical’ event mass posterior from GWTC–2 as a weighted 
+sum of Gaussians (see Table 1 ). From this distribution we draw 2000 
+mass samples. We used these samples to draw 1000 realizations 
+of the posterior function using our Collapsed Gibbs sampling. The 
+reconstructed probability distribution is shown in Fig. 1 . We ﬁnd that 
+the reconstructed probability density is very close to the simulated 
+distribution, with the Jensen–Shannon distance of JSD = 3 . 4 + 1 . 0 
+−1 . 3 ·
+10 −2 nats. 
+4.2 Bimodal Gaussian 
+We now turn to the investigation of our (H)DPGMM by analysing a 
+toy model in which the mass function is a mixture of two Gaussian 
+distributions 
+p( M ) = 
+N 
+(
+M | μ1 , σ2 
+1 
+)
++ N 
+(
+M | μ2 , σ2 
+2 
+)
+2 
+, (52) 
+with μ1 = 25 M ⊙, μ2 = 55 M ⊙, σ2 
+1 = 16 M 2 
+⊙ and σ2 
+2 = 25 M 2 
+⊙. We 
+then sample 200 masses from (52) and draw mass samples for event 
+i from a Gaussian distribution with mean M i ∼ p ( M ) and standard 
+deviation σi from a ﬂat-in-log distribution between 3 M ⊙ and 5 M ⊙. 
+We use this procedure for every simulation presented in this paper. 
+The reconstructed probability density is shown in Fig. 2 and it is 
+compatible with (52). In this case, JSD = 0 . 19 + 0 . 12 
+−0 . 09 nats . 
+4.3 Power law 
+Having established that (H)DPGMM behaves correctly on simple 
+mixture of Gaussians, we turn our attention on the more complicated 
+–a n d realistic –c a s e of a mass function which is a tapered power 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 8 =====
+(H)DPGMM 5461 
+Figure 2. Reconstructed and simulated probability density for the bimodal 
+Gaussian case. 
+Figure 3. Reconstructed and simulated probability density for the tapered 
+power law case. 
+law 
+p( M) = P L ( M) 
+= M −α
+(
+1 + erf 
+(
+M−M min 
+λmin 
+)) (
+1 + erf 
+(
+M−M max 
+λmax 
+))
+4 
+, (53) 
+with α = 1.2, M min = 20 M ⊙, M max = 75 M ⊙, λmin = 5 M ⊙, λmax = 
+10 M ⊙. Here, 
+erf ( x) = 
+2 
+√ 
+π
+∫ x 
+0 
+e −t 2 
+d t. (54) 
+Our catalogue is composed of 250 events drawn from this distri- 
+b ution. Here we ha v e more ev ents than the previous simulation: 
+this choice comes from the fact that the underlying distribution is 
+somewhat more complex than a bimodal Gaussian. 200 events were 
+not enough to grasp all the features of the mass function. We will 
+discuss the effects a limited data set in Section 5.1. The reconstructed 
+mass function is shown in Fig. 3 . Unsurprisingly, the mass function 
+reconstruction is less accurate than the previous case. However, the 
+simulated probability density is found within the 90 per cent credible 
+interval. The Jensen–Shannon distance is JSD = 0 . 21 + 0 . 11 
+−0 . 08 nats . 
+Table 2. Parameters for probability density (55). 
+b μ [M ⊙] σ2 [M 2 
+⊙] α
+0.9 55 36 0.5 
+M min [M ⊙] λmin [M ⊙] M max [M ⊙] λmax [M ⊙] 
+15 5 90 10 
+Figure 4. Reconstructed and simulated probability density for the POWER 
+LAW + PEAK case. 
+4.4 Power law + Gaussian peak 
+As last test, we simulated a mass function similar to the POWER LAW 
++ PEAK from Abbott et al. ( 2021a ) as 
+p( M) = bN( M| μ, σ2 ) + (1 − b) P L ( M) . (55) 
+Table 2 reports the parameters for this probability density. Here as 
+well our simulated catalogue contains 250 events. The reconstructed 
+probability density is displayed in Fig. 4 . The Jensen–Shannon 
+distance, in this case, is JSD = 0 . 22 + 0 . 14 
+−0 . 08 nats . 
+5 INTERPRETING  THE  (H)DPGMM  
+DISTRIBUTION  
+Assuming a parametric model for our inference implies including 
+a certain amount of information, which comes from the previous 
+knowledge of the physical phenomenon we are interested in. On 
+the other hand, non-parametric models like (H)DPGMM are data- 
+driven models, meaning that all the available information comes from 
+the data themselves. This approach leads to a very ﬂexible model, 
+whose interpretation requires the assumption that the data are indeed 
+representative of the underlying process. Since (H)DPGMM will 
+reconstruct the distribution that best accommodates the observed 
+data, if this assumption fails we cannot interpret the reco v ered 
+probability density as a good estimate of the real mass function. 
+We will discuss in what follows two examples: (i) the case in which 
+one has few data points available; (ii) the case in which selection 
+effects are present. 
+5.1 Undersampling 
+This simulation uses the same probability distribution as Section 4.3, 
+equation 53, with α = 1.1, M min = 15 M ⊙, M max = 90 M ⊙, λmin = 
+5 M ⊙, λmax = 10 M ⊙. Ho we ver, in this case we considered for our 
+analysis only 10 events. The results of this simulation are shown in 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 9 =====
+5462 S. Rinaldi and W. Del Pozzo 
+Figure 5. Simulated and reconstructed probability distribution for the 
+tapered power law case with a small number of events. 
+Fig. 5 . We see that the reconstructed probability distribution does not 
+qualitatively agree with the simulation; although the reconstructed 
+credible regions are very broad and encompass the underlying mass 
+function, the (H)DPGMM reconstructed distribution shows clear 
+signs of multimodality, potentially leading the naive reader to believe 
+in the presence of three distinct populations. For this case, we ﬁnd 
+JSD = 0 . 45 + 0 . 11 
+−0 . 11 nats . This simple experiment suggests that drawing 
+physically meaningful conclusions from non-parametric models such 
+as (H)DPGMM needs to be done with care whenever the data set 
+under analysis is limited in size. 
+5.2 Incorporating selection effects 
+In all simulations presented in Section 4, we deliberately neglected 
+selection effects, hence we assumed that all events are observable 
+and observed. In this subsection we turn our attention to their effect 
+on the (H)DPGMM inference. Since each of the mass functions we 
+reconstructed in Section 4 is based e xclusiv ely on observ ed data, we 
+will refer to it as the observed mass function. On the other hand, 
+following Abbott et al. ( 2021a ), we will call astrophysical mass 
+function the ‘real’ distribution. Using Bayes’ theorem and denoting 
+with O the fact that the events have been observed, 
+p ( M) = 
+p ( M| O) p ( O) 
+p ( O| M) 
+, (56) 
+where p ( M | O ) is the observed mass function and p ( O | M ) is the 
+probability of observing an event with mass M . As customary, we 
+refer to p ( O | M ) as the selection function S ( M ). A detailed discussion 
+of the selection function can be found in Veske et al. ( 2021 ). 
+Since the selection function appears at the denominator, (56) is 
+valid only where p ( O | M ) ̸= 0. This is reasonable we do not expect to 
+be able to gather information about regions of the parameter space 
+where the observing probability is zero. 
+In the context of gravitational wave astronomy, the selection 
+function depends, at leading order, on the signal-to-noise ratio (SNR) 
+ρ which, in turn, depends on the mass of the black hole as well as 
+on several other parameters θ. Marginalizing out all the nuisance 
+parameters, 
+S( M) = 
+∫ 
+/Theta1 ( ρ> ρth ) p ( ρ| θ, M) p ( θ) d θd ρ, (57) 
+where ρth is the threshold SNR abo v e which a signal is detected. For 
+a more detailed discussion about how to derive a selection function, 
+Figure 6. Selection function used in this paper and from Veske et al. ( 2021 ). 
+see Farr ( 2019 ). Here we are neglecting the possibility of having 
+uncertainties on the selection function itself that, in principle, should 
+be included in the analysis. 
+This simulation aims to demonstrate that it is possible, given the 
+knowledge of the selection function and a set of observations, to 
+reconstruct the mass function. In this case we use a bimodal Gaussian 
+distribution (see equation 52) with μ1 = 25, μ2 = 55, σ1 = 4 and 
+σ2 = 5 as astrophysical mass distribution. 
+Veske et al. ( 2021 ) provides the detection probability as a function 
+of the primary mass when the secondary mass is ﬁxed. Here we use 
+their selection function S V assuming that all the ev ents hav e M 2 = 
+20 M ⊙. The corresponding selection function is reported in Fig. 6 . 
+We see that S V is a slowly varying function of M 1 . In order to 
+enhance the effect of the selection function, we use 
+S( M) = ( S V ( M)) 9 max [ S V ( M) ] 
+max 
+[
+( S V ( M)) 9 ]. (58) 
+In the previous simulations each event was directly drawn from the 
+mass function. This time, we account for selection effects using 
+the accept–reject sampling method: given a mass ˜ M drawn from 
+the astrophysical distribution p ( M ), we accept the event with a 
+probability S ( M ). We generated O (10 4 ) mass values as to obtain 
+a total of 200 observed events. 
+The reconstructed observed distribution and the corresponding 
+astrophysical distribution are displayed in Figs 7 and 8 . The Jensen–
+Shannon distance is JSD = 0 . 22 + 0 . 16 
+−0 . 11 nats from the astrophysical 
+distribution. 
+6 GWTC–2  
+Having characterized (H)DPGMM on simulated catalogue, we 
+proceed to apply it to the public set of posterior samples from 
+the gravitational wave catalogue GWTC–2 (Abbott et al. 2021c ), 
+available via GWOSC (Abbott et al. 2021d ). We select events 
+following the same prescriptions used in Abbott et al. ( 2021a ), 
+hence counting only events with false alarm rate (FAR) < 1 yr −1 
+and e xcluding ev ents whose components lie in the NS mass range as 
+well as GW190814 (Abbott et al. 2020 ), whose secondary component 
+nature is unknown. 
+To account for selection effects due to the detection thresholds, 
+we used the selection function provided by Veske et al. ( 2021 ) 
+marginalized o v er the secondary mass, Fig. 6 . The inferred observ ed 
+distribution p ( M | O ) is shown in Fig. 9 where, for ease of comparison, 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 10 =====
+(H)DPGMM 5463 
+Figure 7. Simulated and reco v ered observ ed probability distribution for the 
+bimodal Gaussian case. Corrections to account for selection effects are not 
+applied. 
+Figure 8. Simulated and reco v ered astrophysical probability distribution for 
+the bimodal Gaussian case. 
+Figure 9. Observed mass function using data from GWTC–2 (primary 
+masses). Coloured bands are 68 and 90 per cent credible intervals for 
+(H)DPGMM. The dots correspond to median mass values for each event, 
+while the colour gradient is proportional to S 2 ( M ). 
+Figure 10. Astrophysical mass function using data from GWTC–2 (primary 
+masses). Coloured bands are 68 per cent and 90 per cent credible intervals 
+for (H)DPGMM. The dots correspond to median mass values for each event, 
+while the colour gradient is proportional to S 1 ( M ). 
+Figure 11. Observed mass function using data from GWTC–2 (secondary 
+masses). Coloured bands are 68 and 90 per cent credible intervals for 
+(H)DPGMM. The triangles correspond to median mass values for each event, 
+while the colour gradient is proportional to S 2 ( M ). 
+we also report the parametric observed distributions from Abbott 
+et al. ( 2021a ). Fig. 10 shows instead the inferred astrophysical 
+distribution obtained correcting for selection effects as described 
+abo v e. The parametric models from Abbott et al. ( 2021a ) have also 
+been rescaled according to the same prescription. The (H)DPGMM 
+reconstructed mass function is very uncertain, the 90 per cent credible 
+regions are in fact extremely broad and encompass all parametric 
+models for M ≳ 10 M ⊙. This is due to the relatively low number of 
+observ ed ev ents, 43 in total. We do note a signiﬁcant difference at 
+the low mass end of the inferred mass function. 
+Being entirely data driven, (H)DPGMM truncates the 
+mass function at values below the smallest observed mass 
+(GW190924 021846, M 1 = 8 . 9 + 7 . 0 
+−2 . 0 M ⊙). This is stark difference 
+with any parametric models, in which any mass – within the allowed 
+prior range –i s permitted, regardless of it actually being observed 
+or not. As for the features in the observed mass function, we note 
+the presence of two separate main peaks at ∼38 and 15 M ⊙ in the 
+(H)DPGMM mass function. 
+Despite this being indeed suggestive of the presence of two 
+separate populations in merging black holes, when correcting for 
+selection effects these features are smoothed out and we cannot 
+exclude the possibility that they emerge from the limited number of 
+events in the sample. 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 11 =====
+5464 S. Rinaldi and W. Del Pozzo 
+Figure 12. Astrophysical mass function using data from GWTC–2 (sec- 
+ondary masses). Coloured bands are 68 and 90 per cent credible intervals for 
+(H)DPGMM. The triangles correspond to median mass values for each event, 
+while the colour gradient is proportional to S 2 ( M ). 
+To investigate the validity of this hypothesis, we repeated a similar 
+e x ercise to what presented in Section 5.1: we assumed a tapered 
+power law as mass function and generated a total of 45 detected 
+events, repeating the analysis with (H)DPGMM. We generated the 
+events in two distinct ways: 
+(i) sampling 45 individual masses from the underlying mass 
+function; 
+(ii) sampling 45 pairs of masses from the mass function and 
+selecting the largest one from each pair, to mimic the ‘ M 1 ’ labelling. 
+In the ﬁrst (cf. second) case, we ﬁnd that, out of 10 realizations, 6 (7) 
+of them do show similar features to the GWTC–2 mass function, 
+although no actual peak was present in the underlying mass function. 
+Hence, we cannot exclude that the apparent presence of two classes 
+of BBH could be due to the limited number of events analysed. 
+Note that, ho we ver, the relati ve heights of the two modes of the 
+GWTC–2 distribution differ from our simulations. As the number of 
+detected events increases, we expect these feature to either become 
+statistically signiﬁcant or to disappear. 
+Finally, we note that the (H)DPGMM reconstructed astrophysical 
+mass function seems to grow for M ≳ 100 M ⊙. For such high masses, 
+the selection function goes to zero, therefore no constraints from the 
+data alone are possible and the uncertainty on the mass function itself 
+grows very rapidly. 
+On a qualitative level, it seems clear the presence of two distinct 
+Gaussian-like populations in the black hole mass function: ho we ver, 
+one of the assumptions we made before was that the data themselves 
+are representatives of the underlying distribution. 
+In what follows, we will assume that both black holes that compose 
+the merging binaries we observed come from the same formation 
+channels –t h e r e is no difference between them apart from the mass. 
+The fact that we are making a distinction between M 1 and M 2 , 
+considering only the former in our analysis, could mean that we 
+are potentially biasing our analysis, neglecting some information 
+from the low-mass end of the spectrum. The primary masses alone, 
+in this picture, are not representative of the underlying distribution, 
+hence our (H)DPGMM reconstruction is not a good approximation 
+of the real mass function. 
+In order to cure this, we need to include in our analysis the 
+secondary masses as well. Ho we ver, due to the fact that the selection 
+functions for primary and secondary mass are different (see Fig. 6 ), 
+it is not possible to simply enlarge the sample set with the secondary 
+Figure 13. Astrophysical mass function using data from GWTC–2. Coloured bands are 68 and 90 per cent credible intervals for (H)DPGMM. Dots and triangles 
+correspond to median mass values for each event. 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 12 =====
+(H)DPGMM 5465 
+masses from the observed events. We decided to analyse the sec- 
+ondary masses separately and, once reconstructed the astrophysical 
+distributions p 1 ( M 1 ) and p 2 ( M 2 ), join them as 
+p( M ) = 
+p 1 ( M ) + p 2 ( M) 
+2 
+. (59) 
+Fig. 11 shows the observed mass distribution for M 2 , while Fig. 12 
+shows the astrophysical distribution for the same quantity. We see that 
+there is, even in this case, a double peak structure in the observed mass 
+function – once again not compatible with parametric models –w h i c h 
+is almost completely suppressed in the astrophysical distribution. 
+This is due to the fact that the selection function for the secondary 
+mass goes to zero in the low-mass end of the mass spectrum, 9 hence 
+the features in this region are enhanced with respect to the higher- 
+mass features like the secondary peak at M 2 ∼ 25 M ⊙. 
+Fig. 13 shows the reco v ered mass function using both primary and 
+secondary masses from GWTC–2. We see that the mass function 
+we reconstructed using (H)DPGMM is compatible with all the 
+parametric models from Abbott et al. ( 2021a ). 
+7 CONCLUSIONS  
+We presented (H)DPGMM, a non-parametric inference scheme for 
+the merging black hole mass function. Our scheme is based on the 
+DPGMM model, extended to create a hierarchy of non-parametric 
+models. We demonstrated the capabilities of our scheme on con- 
+trolled simulated events and shown that (H)DPGMM successfully 
+reconstructs a variety of simulated mass functions even when they 
+do not belong to the Gaussian family. 
+We discussed some of the limitations of our proposed approach; in 
+particular its dependence on the number of observed events as well 
+as the corrections for selection effects. 
+We applied (H)DPGMM to GWTC–2 events’ primary masses and 
+reco v ered a mass function different from a tapered power law: in 
+order to discriminate between the possibility that this is due just to 
+the fact that we do not have many low-mass BBH mergers or, on the 
+other hand, that this is a hint towards some new feature in the black 
+hole mass spectrum, more events are required. 
+The inclusion of the secondary masses in the analysis, under 
+the assumption that both primary and secondary masses come 
+from the same astrophysical distribution, allowed us to infer a 
+probability distribution that is in agreement with the parametric 
+models from Abbott et al. ( 2021a ). 
+Data from O3b and from future observing runs (O4 and O5) will 
+help to better understand the shape of the black hole mass function 
+and this non-parametric method could represent a useful guide to 
+build more accurate astrophysically moti v ated parametric models. 
+Finally, in this paper, we considered only uni v ariate mixture 
+models. Ho we ver, our algorithm can be easily generalized to allow 
+for the reconstruction of multi v ariate distributions. Multi v ariate mix- 
+ture models will permit investigations in several multidimensional 
+subspaces of the full BBH parameter space to identify correlations 
+and features among parameters other than the mass, e.g. ef fecti ve 
+spins, that should help further shedding light on the origin of BBH 
+systems. We will investigate such cases in future publications. 
+9 This is reasonable since most of the events with such a low secondary mass 
+will have a low-mass ratio, while the events with high-mass ratio in this region 
+will have a very low chirp mass: in both cases, the net result is a very low 
+detection probability. 
+ACKNOWLEDGEMENTS  
+This work beneﬁted from discussion within the Rates & Population 
+group of the LIGO–Virgo–Kagra collaboration. 
+This research has made use of data, software, and/or web tools 
+obtained from the Gra vitational Wa ve Open Science Center ( http 
+s:// www.gw-openscience.org/ ), a service of LIGO Laboratory, the 
+LIGO Scientiﬁc Collaboration, and the Virgo Collaboration. 
+LIGO Laboratory and Advanced LIGO are funded by the United 
+States National Science Foundation (NSF) as well as the Science 
+and Technology Facilities Council (STFC) of the United Kingdom, 
+the Max–Planck–Society (MPS), and the State of Niedersach- 
+sen/Germany for support of the construction of Advanced LIGO 
+and construction and operation of the GEO600 detector. Additional 
+support for Advanced LIGO was provided by the Australian Re- 
+search Council. Virgo is funded, through the European Gravitational 
+Observatory (EGO), by the French Centre National de Recherche 
+Scientiﬁque (CNRS), the Italian Istituto Nazionale di Fisica Nucleare 
+(INFN), and the Dutch Nikhef, with contributions by institutions 
+from Belgium, Germany, Greece, Hungary, Ireland, Japan, Monaco, 
+Poland, Portugal, and Spain. 
+DATA  A V AILABILITY  
+The simulated data underlying this article will be shared on reason- 
+able request to the corresponding author, while GWTC–2 data are 
+available in GWOSC at https:// www.gw-openscience.org/ . 
+REFERENCES  
+Aasi J. et al., 2015, Class. Quant. Grav. , 32, 074001 
+Abbott B. P. et al., 2016a, Phys. Rev. Lett. , 116, 061102 
+Abbott B. P. et al., 2016b, ApJ , 818, L22 
+Abbott B. P. et al., 2019a, Phys. Rev. X , 9, 031040 
+Abbott B. P. et al., 2019b, ApJ , 882, L24 
+Abbott B. P. et al., 2021a, ApJ , 913, L7 
+Abbott B. P. et al., 2021b, ApJ , 909, 218 
+Abbott R. et al., 2020, ApJ , 896, L44 
+Abbott R. et al., 2021c, Phys. Rev. X, 11, 021053 
+Abbott R. et al., 2021d, SoftwareX, 13, 100658 
+Acernese F. et al., 2015, Class. Quant. Grav. , 32, 024001 
+Ay F., Ince G., Kama s ¸ak M. E., Ek s ¸i K. Y. , 2020, MNRAS , 493, 
+713 
+Belczynski K. et al., 2016, A&A , 594, A97 
+Belczynski K. et al., 2020, A&A , 636, A104 
+Bond J. R., Arnett W. D., Carr B. J., 1984, ApJ , 280, 825 
+Carr B. J., 1975, ApJ , 201, 1 
+De Finetti B., 1937, Ann. Inst. Henri Poincare, 7, 1 
+Del Pozzo W., 2012, Phys. Rev. D, 86, 043011 
+Del Pozzo W., Berry C. P. L., Ghosh A., Haines T. S. F., Singer L. P ., V ecchio 
+A., 2018, MNRAS , 479, 601 
+Di Carlo U. N. et al., 2020, MNRAS , 498, 495 
+Escobar M. D., West M., 1995, J. Am. Stat. Assoc., 90, 577 
+Farmer R., Renzo M., de Mink S. E., Fishbach M., Justham S., 2020, ApJ , 
+902, L36 
+Farr W. M., 2019, Res. Notes Am. Astron. Soc. , 3, 66 
+Farr W. M., Fishbach M., Ye J., Holz D., 2019, ApJ , 883, L42 
+Ferguson T. S., 1973, Ann. Stat., 1, 209 
+Franciolini G. et al., 2021, preprint ( arXiv:2105.03349 ) 
+Gelman A., Carlin J., Stern H., Dunson D., Vehtari A., Rubin D., 2013, 
+Bayesian Data Analysis, 3rd edn. CRC Press, Boca Raton, FL 
+Golomb J., Talbot C., 2021, preprint ( arXiv:2106.15745 ) 
+G ¨or ¨ur D., Rasmussen C. E., 2010, J. Comput. Sci. Technol., 25, 653 
+Gray R. et al., 2020, Phys. Rev. D, 101, 122001 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026
+
+===== PAGE 13 =====
+5466 S. Rinaldi and W. Del Pozzo 
+Heger A., Fryer C. L., Woosley S. E., Langer N., Hartmann D. H., 2003, ApJ , 
+591, 288 
+Kimball C. et al., 2021, ApJ , 915, L35 
+Kruckow M. U., Tauris T. M., Langer N., Sz ´ecsi D., Marchant P., Podsiad- 
+lowski P., 2016, A&A , 596, A58 
+Kullback S., 1959, Information Theory and Statistics. John Wiley & Sons, 
+New York 
+Kumamoto J., Fujii M., Tanikawa A., 2020, MNRAS , 495, 4268 
+Li Y. - J . , Wang Y. - Z . , Han M.-Z., Tang S.-P., Yuan Q., Fan Y. - Z . , Wei D.-M., 
+2021, ApJ, 917, 33 
+Liu J. S., 1994, J. Am. Stat. Assoc., 89, 958 
+Mandel I., Farr W. M., Colonna A., Stevenson S., Ti ˇno P ., V eitch J., 2017, 
+MNRAS , 465, 3254 
+Mapelli M. et al., 2021, MNRAS , 505, 339 
+Mastrogiovanni S. et al., 2021, Phys. Rev. D, 104, 062009 
+Murphy K., Conjugate Bayesian analysis of the Gaussian distribution, 2007. 
+https:// www.cs.ubc.ca/ ∼mur phyk/Paper s/bayesGauss.pdf
+Neal R. M., 2000, J. Comput. Graph. Stat., 9, 249 
+Nielsen F., 2019, Entropy, 21, 485 
+Pitman J., 2006, Combinatorial Stochastic Processes: Ecole d’Et ´e de Proba- 
+bilit ´es de Saint-Flour XXXII - 2002, 1st edn., Lecture Notes in Mathe- 
+matics 1875. Springer-Verlag, Berlin, Heidelberg 
+Rasmussen C., 2000, in Solla S., Leen T., M ¨uller K., eds, Neural Information 
+Processing Systems, Vo l . 12. MIT Press, Cambridge, Massachusetts 
+Rodriguez C. L., Morscher M., Pattabiraman B., Chatterjee S., Haster C.-J., 
+Rasio F. A., 2015, Phys. Rev. Lett., 115, 051101 
+Rodriguez C. L., Chatterjee S., Rasio F. A., 2016, Phys. Rev. D , 93, 084029 
+Schutz B. F., 1986, Nature , 323, 310 
+Sethuraman J., 1994, Stat. Sin., 4, 639 
+Talbot C., Thrane E., 2018, ApJ , 856, 173 
+Talbot C., Thrane E., 2020, preprint ( arXiv:2012.01317 ) 
+Teh Y. W., 2010, Dirichlet Process. Springer US, Boston, MA, p. 280 
+Teh Y. W., Jordan M. I., Beal M. J., Blei D. M., 2006, J. Am. Stat. Assoc., 
+101, 1566 
+Tiwari V. , 2021, Class. Quantum Gravity, 38, 155007 
+Veitch J. et al., 2015, Phys. Rev. D, 91, 042003 
+Veske D., Bartos I., M ´arka Z., M ´arka S., 2021, preprint ( arXiv:2105.13983 ) 
+Zevin M. et al., 2021, ApJ , 910, 152 
+This paper has been typeset from a T E X/L A T E X ﬁle prepared by the author. 
+MNRAS 509, 5454–5466 (2022) 
+Downloaded from https://academic.oup.com/mnras/article/509/4/5454/6424929 by guest on 07 March 2026

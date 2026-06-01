@@ -1,0 +1,1801 @@
+
+===== PAGE 1 =====
+Contents lists available at ScienceDirect
+Applied Energy
+journal homepage: www.elsevier.com/locate/apenergy
+Graph neural networks for power grid operational risk assessment under
+evolving unit commitment
+Yadong Zhang, Pranav M. Karve, Sankaran Mahadevan ∗
+Department of Civil and Environmental Engineering, Vanderbilt University, 400 24th Avenue South, Nashville, 37212, TN, USA
+A R T I C L E I N F O
+Dataset link: https://github.com/yadong-zhang
+/GNN_SCUC
+Keywords:
+Power grid
+Uncertainty
+Graph neural network
+Reliability
+Risk
+A B S T R A C T
+This article investigates the ability of graph neural networks (GNNs) to identify risky conditions in a power
+grid over the subsequent few hours, without explicit, high-resolution information regarding future generator
+on/off status or power dispatch decisions. The GNNs are trained using supervised learning to predict the power
+grid’s aggregated bus-level (either zonal or system-level) or individual branch-level state under different power
+supply and demand conditions. The variability of the stochastic grid variables (wind/solar generation and load
+demand), and their statistical correlations, are considered while generating the inputs for the training data.
+The outputs in the training data include system-level, zonal and transmission line-level quantities of interest
+(QoIs). The ground truth of QoIs are obtained by numerically solving deterministic optimization problems (e.g.,
+security-constrained unit commitment) with the same inputs. The GNN predictions are used to conduct hours-
+ahead, sampling-based reliability and risk assessment w.r.t. zonal and system-level (load shedding) as well as
+branch-level (overloading) failure events. The proposed methodology is demonstrated for three synthetic grids
+with sizes ranging from 118 to 2848 buses. Our results demonstrate that GNNs are capable of providing fast and
+accurate prediction of QoIs and can be good proxies for computationally expensive optimization algorithms.
+The excellent accuracy of GNN-based reliability and risk assessment suggests that GNN models can substantially
+improve situational awareness by enabling quick, high-resolution reliability and risk estimation.
+1. Introduction
+The power grid is poised for a major transformation due to the
+increasing participation of renewable energy sources (RES), plugin
+devices, and flexible loads [1–3]. This paradigm shift, while pivotal
+in steering towards a more sustainable and diversified energy future,
+introduces substantial power supply and demand uncertainty [4–7] due
+to the volatility of RES. To effectively handle this challenge, grid oper-
+ators are in need of (i) advanced optimization techniques that take the
+uncertainty into account [8–11], and (ii) rigorous methods for quantify-
+ing the operational risk (related to reserve inadequacy, load shedding).
+Advanced optimization techniques are essential in grid operational de-
+cisions such as unit commitment (UC) and economic dispatch (ED) [12–
+14]. On the other hand, risk quantification methods are required to
+understand the risks associated with the increasing uncertainty in the
+grid variables [15–18]. By accurately estimating hours-ahead risk, grid
+operators can develop strategies to ensure uninterrupted power supply
+at optimal costs even under volatile conditions.
+Advanced optimization methods, such as, stochastic programming
+[19], chance-constrained optimization [20,21], robust optimization
+[22], have been developed for decision-making under uncertainty.
+∗ Corresponding author.
+E-mail address: sankaran.mahadevan@vanderbilt.edu (S. Mahadevan).
+However, they come with their own sets of challenges. For instance,
+stochastic programming can only consider a small number of sce-
+narios (a low-resolution representation of input uncertainty) due to
+the high computational cost [23,24]; chance-constrained optimization
+seeks a solution that satisfies all probabilistic constraints, which is
+difficult to compute in practice [25]; robust optimization considers
+the worst possible grid condition in decision-making process, often
+leading to overly conservative solution [26]. In operational risk quan-
+tification, potential contingencies of the whole system or specific zone
+are often of interest [27–30]. For instance, the analysis of system-
+level or zonal load shedding [31–33], reserve inadequacy [34–36],
+reserve inflexibility [37], insufficient ramp capacity [38,39], has been
+reported in previous work. By focusing on the system or zone level,
+the corresponding risk assessment provides a macroscopic view of the
+grid’s operational state. It enables operators to identify vulnerabilities,
+allocate resources more effectively, and develop strategies that enhance
+the overall stability and safety of the power grid. The zonal/system-
+level risk assessment requires computing the probability distribution
+of grid states corresponding to the given (forecast) joint probability
+distribution of the stochastic grid variables (wind/solar generation and
+https://doi.org/10.1016/j.apenergy.2024.124793
+Received 24 May 2024; Received in revised form 24 September 2024; Accepted 24 October 2024
+Applied Energy 380 (2025) 124793 
+Available online 30 November 2024 
+0306-2619/© 2024 Elsevier Ltd. All rights are reserved, including those for text and data mining, AI training, and similar technologies. 
+
+===== PAGE 2 =====
+Y. Zhang et al.
+Nomenclature
+ Graph
+ Set of edges in a graph
+ Set of nodes in a graph
+| ⋅ | Cardinality of a set
+𝑢 Node in a graph
+𝐡𝑘
+𝑢 Embedding of node 𝑢 in 𝑘-th layer
+𝐦𝑢 Aggregated node embedding from neighbors of 𝑢
+ (𝑢) Set of 1-hop neighbors of node 𝑢
+𝑁𝐺 Number of generators
+𝑁 Number of samples
+𝑀 Number of marginal distributions
+𝑄 Number of branches in a power grid
+𝑇 Number of time steps in the reliability unit
+commitment horizon
+𝛥𝑇 Number of time steps in the multi-step reliability
+and risk assessment
+𝑈𝐺𝑖,𝑡 Generator 𝑖 ON (1)–OFF (0) status at 𝑡
+𝑃𝐺𝑖,𝑡 Power generation of generator 𝑖 at 𝑡
+𝑅𝐺𝑖,𝑡 Power generation cost of generator 𝑖 at 𝑡
+𝑆 𝑈𝐺𝑖,𝑡 Startup cost of generator 𝑖 at 𝑡
+𝑆 𝐷𝐺𝑖,𝑡 Shutdown cost of generator 𝑖 at 𝑡
+𝜖 Random matrix following standard Gaussian  (0, 1),
+R𝑁×𝑀
+𝐱𝑡 Random matrix following Gaussian  (0, 𝑡), R𝑁×𝑀
+𝐱𝑐
+𝑡 Random matrix with covariance between columns
+specified by 𝐂, R𝑁×𝑀
+𝐮𝑡 CDF of 𝐱𝑐
+𝑡 , [0, 1]𝑁×𝑀
+𝑖 𝑖-th marginal distribution
+𝐂 Covariance matrix, R𝑀×𝑀
+𝐋 Lower triangular matrix of Cholesky factorization of
+𝐂, R𝑀×𝑀
+𝛷 CDF of standard normal probability distribution
+𝛷𝑖 CDF of the 𝑖-th marginal distribution
+𝛹𝑡 Indicator variable {0, 1} for load shedding at time 𝑡
+𝜓(𝑡) The amount of load shed at time 𝑡 (in MW)
+𝐶𝑠(𝜓) Consequence cost function for load shedding
+𝛤 𝑖
+𝑡 Indicator variable {0, 1} for branch 𝑖 overloading at 𝑡
+𝛾 Power flow in a transmission line (network branch)
+𝛾𝑚𝑎𝑥 Maximum allowed branch power flow
+𝜖 Fraction of 𝛾𝑚𝑎𝑥 that defines the security threshold of
+branch power flow
+̃ 𝛾 The amount of branch overloading, ̃ 𝛾= 𝛾 − 𝜖 𝛾𝑚𝑎𝑥
+𝐶𝑜(̃ 𝛾) Consequence cost function for branch overloading
+load). This is accomplished by drawing Monte Carlo (MC) samples
+of stochastic grid variables from the forecast distribution and solving
+deterministic SCUC problems to obtain the grid state (generator on/off
+status and power dispatch) for each MC sample. This process, however,
+is time consuming due to the computational cost of solving numerous
+optimization problems. The granularity afforded by SCUC solution
+(bus-level grid states) is also not needed for zonal/system-level risk
+analysis, because such risk assessment is performed using quantities
+aggregated over a power grid zone or over an entire power grid.
+For example, the risk of zonal reserve shortage requires aggregating
+available reserve over a zone in the power grid, and then comparing
+the aggregated zonal reserve with the zonal reserve requirement. The
+distribution of the available reserve across different generators within
+the zone is not considered in zonal risk assessment. It is therefore
+important to develop computational tools that can directly predict
+zonal/system-level quantities (without solving the SCUC problem) and
+thus enable fast and accurate reliability and risk assessment [40,41].
+Such tools need to predict the grid state corresponding to numerous
+future (hours-ahead) forecast scenarios of the stochastic grid vari-
+ables, while accounting for the corresponding changes in the unit
+commitment and without explicitly solving the stochastic optimization
+problems. They also need to be aware of and to account for the
+intricate interdependencies within the power grid with evolving unit
+commitment, while providing accurate and rapid future grid state
+predictions [42,43].
+Fast and accurate prediction of future grid behavior under differ-
+ent forecast scenarios requires learning the patterns of grid behavior
+under different conditions. Neural networks, particularly graph neural
+networks (GNNs), emerge as attractive options for this task due to their
+superior ability to handle graph-structured information, like that en-
+countered in power grid analysis [44–46]. The core principle of GNN is
+to learn nodal features within a graph by assimilating information from
+neighboring nodes via message passing [47,48]. This unique capability
+has led to GNNs being used in various fields, including recommender
+system [49], social network analysis [50], knowledge graph comple-
+tion [51]. In the power grid domain, GNN has been used for fault
+Applied Energy 380 (2025) 124793 
+2 
+
+===== PAGE 3 =====
+Y. Zhang et al.
+diagnosis [52], power outage prediction [53], line flow control [54],
+load or generation forecasting [55], and grid state estimation [56–58].
+In recent work [59,60], GNN has also been used as a surrogate for
+optimal power flow (OPF) computation with a fixed (known) gener-
+ator on/off status (UC). However, to the best of our knowledge, the
+utilization of GNNs in performing prediction of system-, zone- and
+branch-level quantities within a planning horizon (e.g., 12 h) under
+changing unit commitment has not been previously reported. Such
+predictions are necessary for performing hours-ahead risk assessment.
+These predictions need to account for future operator actions corre-
+sponding to the given probabilistic forecast. For example, if the forecast
+shows higher than expected load demand, then the zonal/system-
+level grid variables need to be predicted by anticipating the operator
+bringing more generators online to help with increasing demand. If the
+future operator actions and changes in the unit commitment are not
+considered, then the risk assessment will be inaccurate.
+In this work, we focus on hours-ahead prediction of quantities of
+interest (QoIs) at system, zone and branch levels. Accurate GNN-based
+system-level, zone-level or branch-level reliability and risk prediction
+will help operators tune their intra-day reliability unit commitments
+(RUCs) [61–66]. At the system/zone level, we consider thermal power
+generation and load shedding as QoIs, while transmission line flow is
+considered as the QoI at the branch level. Multiple GNN models are
+trained with each focusing on the prediction of one QoI. In power grids,
+fluctuation of grid variables in one zone is often related to the changes
+in other zones, leading to spatial correlation. Temporal correlations also
+emerge due to grid inertia and sequential nature of grid operations.
+These correlations must be meticulously accounted for in reliability and
+risk assessment. For that purpose, a large number of spatio-temporally
+correlated samples are drawn from probability distribution forecasting
+of the RES power supply and load demand. These samples are then
+used to solve SCUC problems and to obtain the grid state and QoIs
+corresponding to these forecast scenarios. Following the supervised
+learning approach, the data, i.e., samples of power supply and demand
+(inputs) and the corresponding QoIs (outputs), are split into training
+and testing sets, and model evaluation is performed on the testing set.
+The GNN-based QoI predictions are then used for reliability and risk
+quantification, and the results are compared with reliability and risk
+computed using numerical SCUC solutions, to evaluate the accuracy.
+Our main contributions include:
+1. Investigation of GNN models’ utility to predict QoIs at
+system/zone/branch level under changing unit commitment. This
+is the first investigation aimed at assessing the utility of GNNs for
+hours-ahead grid state prediction, which implicitly considers and
+accounts for the changing unit commitment but does not explicitly
+compute future commitment or dispatch decisions.
+2. Development of novel reliability and risk quantification methods
+for hours-ahead operational risk assessment, either standalone (at a
+given future time instant) or multi-step (over multiple future time in-
+stants). The developed methods can be applied at both system/zone
+and branch levels. This is the first investigation that considers these
+two important temporal aspects of hours-ahead grid risk quantifica-
+tion.
+3. Development of a methodology for quantifying the influence of
+congestion and insufficient generation capacity (online generators)
+on load shedding risk. Such cause-aware risk quantification can help
+improve the operators’ situational awareness and help illuminate
+various risk trade-offs.
+4. Demonstration of the proposed methodology on medium to large
+sized synthetic power grids. A methodology for generating spatio-
+temporally correlated samples of grid variables (synthetic forecasts)
+is developed and exercised for risk assessment of medium/large
+power grids.
+The rest of the paper is organized as follows: Section 2 provides a
+brief overview of hours-ahead operational decision-making in a power
+grid, fundamentals of graph neural network, and reliability and risk as-
+sessment metrics. In Section 3, we discuss the elements of the proposed
+methodology, including GNN model development, risk quantification,
+and training data generation. Numerical experiments used to demon-
+strate the proposed methodology are described in Section 4, results are
+discussed in Section 5, and conclusions are provided in Section 6.
+2. Background
+2.1. Power grid operation and the SCUC problem
+The basic requirement of grid operation is to balance demand and
+supply, while minimizing the overall power generation cost [67,68].
+The power demand fluctuates over a day; for example, power consump-
+tion increases during the morning and early evening hours, and is very
+low during the night. An operational strategy that aims to minimize the
+power generation cost requires deciding the on/off status of various
+generators over the operational time window, such as, a single day.
+Grid operators usually schedule the on/off status of generation units
+for a certain period (e.g., 12 h) by employing the hours-ahead planning
+techniques such as security-constrained unit commitment (SCUC). The
+SCUC problem can be stated as:
+min
+𝑈𝐺𝑖,𝑡
+𝐹
+(
+𝑈𝐺𝑖,𝑡 , 𝑃𝐺𝑖,𝑡
+)
+= min
+𝑃𝐺𝑖,𝑡
+𝑇∑
+𝑡=1
+𝑁𝐺∑
+𝑖=1
+[𝑈𝐺𝑖,𝑡 (1 − 𝑈𝐺𝑖,𝑡−1 )𝑆 𝑈𝐺𝑖,𝑡
++ 𝑈𝐺𝑖,𝑡−1 (1 − 𝑈𝐺𝑖,𝑡 )𝑆 𝐷𝐺𝑖,𝑡 + 𝑈𝐺𝑖,𝑡 𝑅𝐺𝑖,𝑡 (𝑃𝐺𝑖,𝑡 )] (1)
+subject to constraints (system power balance, power generation limits,
+minimum on/off time constraints, ramping rate constraints, reserve re-
+quirements, line flow limits). We refer the reader to [69] for additional
+details of the SCUC problem.
+Given the forecast of demand and supply, the outcome of SCUC
+plays a fundamental role in subsequent grid operation. For instance,
+due to its strategically important position in the operational framework,
+SCUC directly influences the economic dispatch (ED), which aims at
+refining the generation output every five to ten minutes [21,70]. A
+rigorous hours-ahead or intra-day grid risk assessment methodology
+needs to consider the evolving on/off status of the generators in re-
+sponse to the changing grid state. When sampling-based operational
+risk assessment methods are used, this necessitates solving thousands
+of SCUC problems corresponding to the forecast scenarios. Although
+various advanced algorithms (branch-and-bound [71], Lagrangian re-
+laxation [72], Benders decomposition [73]) have been developed for
+solving the SCUC problem, this task is still computationally challenging,
+especially for large power grids with thousands of buses and branches.
+To address this challenge, data-driven surrogate models are being
+developed in the literature. These models can be categorized into two
+types: end-to-end and assistant models. End-to-end models, including
+decision tree [74], gated recurrent neural network [75], are trained to
+generate direct predictions of UC or ED given demand and RES power
+generation as input. These models are capable of predicting thousands
+of QoIs corresponding to various demand/supply scenarios in a short
+time (typically in milliseconds). However, the presence of both discrete
+and continuous variables poses considerable challenge to the accuracy
+these models. Moreover, most of the existing end-to-end models can
+only predict 2 to 5 h ahead [76,77], while intra-day or day-ahead
+grid operation usually requires a longer scheduling horizon, e.g., 12 h.
+These limit the utilization of currently available end-to-end models. In
+contrast, the assistant models speed up a particular subtask in the SCUC
+solution process, such as identifying the active constraints [74] (critical
+branches that probably exceed line flow limit [78], generators that may
+approach the maximum generation capacity [79]), or providing a better
+initial guess (warm start) [80,81], given the (forecasting) distribution
+of demand and RES power supply. The active constraints are retained
+Applied Energy 380 (2025) 124793 
+3 
+
+===== PAGE 4 =====
+Y. Zhang et al.
+during the SCUC problem solution process, whereas inactive constraints
+are removed to decrease the computational cost. A warm start also
+helps reduce the computational cost of the SCUC solution. Nevertheless,
+the speed up is limited as the iterative SCUC problem solution is still
+needed when using an assistant model.
+In real-world grid operation, operators are often interested in risk
+quantification of the entire power grid or specific zones [27,29,30].
+For this purpose, a machine learning model that can directly predict
+system-level/zonal quantities, without requiring explicit SCUC problem
+solutions, could be very useful. This approach has not been reported
+in the literature. The objective of this paper is to investigate the
+performance of such (end-to-end) graph neural networks for direct
+zonal/system-level risk estimation.
+2.2. Graph neural network (GNN)
+Graph neural network (GNN) is a type of neural network that can
+process graph-structured data [46,82,83]. The core of GNN is message
+passing mechanism, which systematically aggregates and updates node
+features by assimilating information from the neighboring nodes [47,
+48]. Within the topology of a graph, nodes directly linked to a given
+node are designated as its one-hop neighbors. Extending this nomencla-
+ture, the immediate neighbors of these one-hop nodes are identified as
+two-hop neighbors, and so on. Each layer of a GNN model is dedicated to
+orchestrating the exchange of information between a node and its one-
+hop neighbors, and multiple layers can be stacked together to assimilate
+information from remote neighbors in the graph. Message passing is
+comprised of aggregation and updating, which can be represented as:
+𝐦𝑢 = 𝐀𝐆𝐆𝐑𝐄𝐆𝐀𝐓𝐄(𝐡𝑘
+𝑣), 𝑣 ∈  (𝑢), (2)
+𝐡(𝑘+1)
+𝑢 = 𝐔𝐏𝐃𝐀𝐓𝐄(𝐡𝑢, 𝐦𝑢). (3)
+GNNs have been remarkably successful in recommender systems
+[49], knowledge graph completion [51], social network analyses
+(anomaly detection and community identification) [50]. Over the past
+few years, GNN has also been used in the power grid domain. For
+example, one of the earliest GNN benchmarks, graph convolutional
+network (GCN) [84], has been used in power grid applications for fault
+detection [85], outage prediction [86]. However, GCN needs to access
+the entire graph in every aggregation and update operation, which
+is computationally expensive and hinders its use for large graphs. To
+alleviate the computational burden, GNN architectures that can work
+on partial graphs have been developed. One such GNN architecture
+is GraphSAGE [87]. It generates embeddings by sampling a fixed-size
+neighborhood and then aggregating the features from these neighbors.
+GraphSAGE can be represented as:
+𝐦𝑢 = CONCAT
+(
+𝐡𝑢, 1
+| (𝑢)|
+∑
+𝑣∈ (𝑢)
+𝐡𝑣
+)
+. (4)
+GraphSAGE does not require the entire graph to be loaded into the
+computer memory. It gradually samples nodes over the graph, making
+it attractive for the learning task on large graphs. In this work, we
+explore GraphSAGE’s utility for learning the grid behavior pattern
+over a few hours into the future, for large grids (thousands of buses).
+Unless otherwise specified, the term GNN implies the GraphSAGE
+architecture in the rest article. Note that a systematic investigation of
+hyper-parameters, including number of layers, embedding dimensions,
+learning rate, and many others, is required to make a fair comparison
+between GCN and GraphSAGE w.r.t. efficiency and prediction accu-
+racy [88]. We used the GraphSAGE architecture to perform the learning
+task of interest. Other GNN architectures could also be used for learning
+grid behavior under supply/demand uncertainty.
+2.3. Reliability and risk in the power grid operation — methods and metrics
+In recent years, there has been a push to shift power grid op-
+erational decision-making from experience- or judgement-based best
+practices (e.g., minimum reserve requirement) to advanced algorithms
+(e.g., stochastic dynamic reserve allocation [23], stochastic SCUC/SCED
+[24], and robust unit commitment [25]) that are able to consider
+variability in supply and demand. These algorithms have allowed
+decision-making under increasing supply/demand volatility due to the
+increasing penetration of renewable energy. However, these methods
+are computationally demanding, and it may be possible to use only
+a small number of supply/demand scenarios in practice. As a result,
+these methods provide an approximate estimate of the underlying
+risk associated with decision-making. Furthermore, these algorithms
+do not typically report on all relevant failure modes of interest for
+a grid operator. For example, the risk of insufficient zonal reserve
+may not be independently quantified and communicated when the
+conditional value at risk (CVaR) of total generation explicitly consider
+consequence cost for all relevant failure events. Such risk compu-
+tation can significantly improve operators’ situational awareness for
+given supply/demand forecasting, and thus help arrive at suitable
+risk-mitigation interventions. For instance, it can support the cost
+vs. risk trade-off analysis and help arrive at suitable risk-mitigation
+interventions, such as purchasing additional power, shedding load of
+a specific zone. It can also provide a quantitative basis for tuning
+the hyper-parameters (penalties, constraints, number of samples) of
+intra-day decision making algorithms (e.g., look-ahead commitment,
+or LAC).
+In a recent work [18], Stover et al. provide a comprehensive review
+of state-of-the-art reliability and risk quantification methods, and pro-
+pose a new sampling-based framework that encompasses various failure
+modes. This framework develops metrics at three levels to characterize
+the risk: the conditional expectation of the failure event (Level 1),
+the probability of this event occurring (Level 2), and the consequence
+(monetary cost) (Level 3). In this study, we place emphasis on the Level
+2 and Level 3 metrics. The Level 2 metric captures the probability of
+failure with respect to a failure mode, e.g., reserve inadequacy, loss of
+load. The Level 3 metric adopts a more holistic view, not only gauging
+the likelihood of failure but also factoring in the economic implications
+or consequence costs linked to the adverse event. This dual consider-
+ation ensures a comprehensive understanding of the operational risk,
+melding both the probabilistic and economic dimensions of potential
+system failures.
+However, the above framework only considers reliability and risk
+metrics at system level, while risk in individual branches is not quan-
+tified. In the context of increasing utilization of renewable energy,
+the volatility of transmission line flow is also significantly elevated,
+introducing additional risk in grid operation. As a result, it is also
+necessary to take this kind of risk into consideration. In this work, we
+utilize the risk framework in [18] for hours-ahead zonal/system-level
+reliability and risk prediction under temporally evolving grid topology
+(i.e., unit commitments), and extend the analysis to branch-level QoIs.
+3. Proposed methodology
+Three key elements of the proposed methodology, namely, GNN
+model development, reliability and risk assessment, and training data
+generation, are discussed in this section.
+3.1. GNN model development
+In this work, we utilize GNN models consisting of three compo-
+nents: Encoder, GNN layers, and Decoder. Encoder generates a high-
+dimensional representation (embedding) of the input vector, i.e., node
+features. This embedding acts as an enriched representation of the
+input data, capturing intricate patterns and relationships inherent in
+Applied Energy 380 (2025) 124793 
+4 
+
+===== PAGE 5 =====
+Y. Zhang et al.
+Fig. 1. Illustration of GNN surrogate models. Vectors 𝐏, 𝐒 and 𝐅 contain predictions of zonal/system-level aggregated thermal power generation, load shedding and power flow
+on critical branches, respectively, with each element of the vector representing the corresponding QoI at individual zone/branch.
+Table 1
+Details of GNN surrogate models.
+Layer Dimension (in_channel, out_channel)
+Model I Model II Model III
+Encoder-1 (𝐷𝐼 , 2𝐷𝐼 ) (𝐷𝐼 , 2𝐷𝐼 ) (𝐷𝐼 , 2𝐷𝐼 )
+Encoder-2 (2𝐷𝐼 , 𝐷𝐻 ) (2𝐷𝐼 , 𝐷𝐻 ) (2𝐷𝐼 , 𝐷′
+𝐻 )
+GraphSAGE-1 (𝐷𝐻 , 𝐷𝐻 ) (𝐷𝐻 , 𝐷𝐻 ) (𝐷′
+𝐻 , 𝐷′
+𝐻 )
+GraphSAGE-2 (𝐷𝐻 , 𝐷𝐻 ) (𝐷𝐻 , 𝐷𝐻 ) (𝐷′
+𝐻 , 𝐷′
+𝐻 )
+Decoder-1 (𝐷𝐻 , 2𝑇 ) (𝐷𝐻 , 2𝑇 ) (𝐷′
+𝐻 , 2𝑇 )
+Decoder-2 (2𝑇 , 𝑇 ) (2𝑇 , 𝑇 ) (2𝑇 , 𝑇 )
+Mean Pooling (𝑇 , 𝑇 ) (𝑇 , 𝑇 ) N/A
+the input. Once the encoder processes the input, it is passed on to the
+GNN layers, which aggregate and update node representations by in-
+corporating information from neighboring nodes, allowing the network
+to understand the broader structure and context of the graph. Such
+aggregation aids in refining the node embedding by assimilating both
+local and global information from the graph. Note that the number
+of GNN layers can be different for other problems and/or prediction
+tasks [89]; systematic hyper-parameter tuning should be conducted to
+determine the optimal number of layers. Finally, the Decoder takes
+these enhanced node representations and translates them into the de-
+sired output format. Depending on the specific application, the decoder
+might reconstruct the original data, predict certain properties of the
+graph, or even generate new graph structures.
+The combination of Encoder, GNN layers, and Decoder ensures that
+the GNN model can efficiently capture, process, and utilize graph-
+structured data. Note that both Encoder and Decoder consist of two
+fully connected neural layers (multi-layer perceptron, or MLP). Park
+et al. [63] have shown that the expressive power of GNN models can
+be improved by adding encoder and decoder. In the preliminary hyper-
+parameter tuning exercise, it was found that predicting each QoI type
+(e.g., thermal power generation, load shedding, power flow) separately
+achieves better prediction accuracy. Therefore, three separate GNN
+models are constructed for predicting different QoIs: (i) zonal/system-
+level aggregated thermal power generation, (ii) zonal/system-level ag-
+gregated load shedding, and (iii) power flow in critical branches.
+The GNN models are schematically shown in Fig. 1, and the model
+architecture details are summarized in Table 1. GNN models accept two
+inputs: node vectors (Input 1 in Fig. 1) and adjacency matrix (Input 2
+in Fig. 1). For the 𝑖-th node, the node vector 𝐱𝑖 is a concatenation of the
+feature vector 𝐮 and grid variable vector 𝐯, i.e., 𝐱𝑖 = 𝐮 ∥ 𝐯. For a node
+representing a generator bus, 𝐮 = 𝐮𝑔 = [location-𝑥, location-𝑦, zone,
+voltage, max power generation, min power generation, on/off status,
+marginal price]; for a node representing a load bus, 𝐮 = 𝐮𝑑 = [location-
+𝑥, location-𝑦, zone, voltage, demand]; for a node representing a bus
+which contains both generator and load bus, 𝐮 = 𝐮𝑔 ∥ 𝐮𝑑. 𝑇 represents
+the number of time steps and also the dimension of the grid variable
+vector 𝐯. For generator, 𝐯 = 𝐯𝑔 = [𝑝1, 𝑝2, … , 𝑝𝑇 ] where 𝑝𝑖 represents the
+wind power generation at time step 𝑖. Note that 𝑝𝑖 is initialized with 0
+for a thermal generator. The initial value for the binary on/off status
+variable is set as 0.5 for thermal generators, whereas it is enforced at
+1 for wind turbines. For load bus, 𝐯 = 𝐯𝑑 = [𝑙1, 𝑙2, … , 𝑙𝑇 ] where 𝑙𝑖
+represents the demand at time step 𝑖. The dimension of 𝐱𝑖 is represented
+by 𝐷𝐼, other embedding dimensions can be determined by 𝐷𝐻 = 2𝐷𝐼
+and 𝐷′
+𝐻 = 4𝐷𝐼. Note that the three types of nodes are embedded
+separately. The adjacency matrix (Input 2) represents the topology
+(node connection) of power grid. Since there are three node types,
+heterogeneous GNN is used to perform aggregation and update. All
+transmission lines are modeled as edges of the graph. A ReLU activation
+function is added after each neural network layer except for the last
+one. These GNN models take grid topology, load demand and RES
+power generation as inputs, and generate predictions of the QoIs. A
+supervised learning approach is used, and decisions obtained using
+numerical solutions of the SCUC problem are used as outputs (reference
+solution of QoIs) in the training process. The loss function consists of
+mean squared error (MSE) and a regularization term to ensure that
+predictions are within reasonable upper and lower bounds.
+3.2. Reliability and risk assessment
+We consider two failure modes for reliability and risk assessment:
+load shedding and branch overloading. Load shedding refers to the delib-
+erate reduction or shutdown of electrical power supply to a consumer
+in a system to prevent the failure of the entire system, when demand
+strains the capacity of the system. Branch overloading implies that the
+electric current on a branch exceeds a safety threshold and may lead
+to failure. We perform two types of hours-ahead reliability and risk
+Applied Energy 380 (2025) 124793 
+5 
+
+===== PAGE 6 =====
+Y. Zhang et al.
+assessment: (a) standalone hours-ahead assessment that considers QoIs
+at a specific future time instant (𝑡 + 𝑖), and (b) multi-step hours-ahead
+assessment that considers QoIs at multiple time instants ((𝑡 + 𝑖), (𝑡 + 𝑖) +
+1, (𝑡+𝑖) + 2, … ) in order to provide an aggregated estimate over a future
+duration. We use the variable 𝛥𝑇 to distinguish the reliability and risk
+aggregation horizon from the RUC planning horizon 𝑇 .
+3.2.1. Load shedding
+Both standalone and multi-step load shedding are considered in the
+load shedding analysis. Standalone shedding represents the immediate
+vulnerability within the system, highlighting areas where current de-
+mand exceeds the system’s capacity or where there are breakdowns at
+a particular time instant. On the other hand, the multi-step shedding
+is a forward-looking measure that identifies potential pitfalls of the
+grid operation over multiple time instants in the near future. This
+dual perspective establishes a comprehensive assessment of the system’s
+reliability that can account for both current and future challenges. The
+probabilities of standalone and multi-step load shedding are defined as:
+standalone:
+𝑠(𝑡) = 𝑝(𝛹𝑡 = 1), (5)
+multi-step:
+ +
+𝑠 (𝑡) = 𝑝
+( 𝑡+𝛥𝑇⋃
+𝑡′=𝑡+1
+𝛹𝑡′ = 1 | 𝛹𝑡 = 1
+)
+, (6)
+respectively.
+Load shedding usually leads to compromised service reliability,
+potential economic losses, and safety concerns, hence there is con-
+sequence (monetary cost) associated with it. In [18], the degree of
+shedding is considered and the corresponding cost is defined as:
+𝑅𝑠(𝑡) = ∫
+𝜓(𝑡)
+0
+𝐶𝑠(𝜓) 𝑑 𝜓 , (7)
+Note that 𝐶𝑠(𝜓) depends solely on 𝜓, while 𝜓(𝑡) is a function of 𝑡. 𝑅𝑠(𝑡)
+can be computed for each sample of grid variables (obtained from their
+forecast). The associated risk of load shedding is then quantified as the
+expectation of potential monetary cost (over all samples):
+𝑠(𝑡) = E [𝑅𝑠(𝑡)], (8)
+and
++
+𝑠 (𝑡) =
+𝛥𝑇∑
+𝛥𝑡=1
+E [𝑅𝑠(𝑡 + 𝛥𝑡)], (9)
+for standalone and multi-step load shedding, respectively. Here, we
+assume that the cost function 𝐶𝑠(𝜓) is temporally invariant. Neverthe-
+less, the consequence cost for load shedding events further away from
+the current time could be reduced by considering suitable, temporally
+diminishing cost functions, e.g., by using a discount factor 1∕(1 + 𝛥𝑡) to
+modify 𝐶𝑠(𝜓). The overall risk at 𝑡 can be computed as:
+ℜ𝑠(𝑡) = 𝑠(𝑡) + +
+𝑠 (𝑡)
+= E [𝑅𝑠(𝑡)]+
+𝛥𝑇∑
+𝛥𝑡=1
+E [𝑅𝑠(𝑡 + 𝛥𝑡)] (10)
+=
+𝛥𝑇∑
+𝛥𝑡=0
+E [𝑅𝑠(𝑡 + 𝛥𝑡)]
+3.2.2. Branch overloading
+Branch overloading can result in a large amount of heat generation
+that may weaken the insulating material, accelerate the aging process
+of the conductor, and even lead to equipment failure. Hence it is vital
+to monitor and manage branch loading status. Once again, we consider
+both standalone and multi-step risk. The respective probabilities are
+calculated as:
+standalone:
+ 𝐼
+𝑜 (𝑡) = 𝑝 (𝛤𝑡 = 1), (11)
+multi-step:
+ 𝐼+
+𝑜 (𝑡) = 𝑝
+( 𝑡+𝛥𝑇⋃
+𝑡′=𝑡+1
+𝛤𝑡′ = 1 | 𝛤𝑡 = 1
+)
+, (12)
+In real-world grid operations, electric current through any given
+branch is influenced by the flows in other branches. This interdepen-
+dence is due to the physical laws that govern electrical flow (Kirchhoff’s
+laws). Therefore, we compute conditional probabilities (of one branch
+overloading given overloading in other branches) for both standalone
+and multi-step cases. The corresponding probabilities are computed as:
+standalone (conditional):
+ 𝐼 𝐼
+𝑜 (𝑡)|||𝑖,𝑗
+=
+[
+𝑝
+(
+𝛤 𝑗
+𝑡 = 1 | 𝛤 𝑖
+𝑡 = 1
+)]
+𝑖,𝑗
+, (13)
+multi-step (conditional):
+ 𝐼 𝐼+
+𝑜 (𝑡)|||𝑡′,𝑖,𝑗
+=
+[
+𝑝
+( 𝑡+𝛥𝑇⋃
+𝑡′=𝑡+1
+𝛤 𝑗
+𝑡′ = 1 | 𝛤 𝑖
+𝑡 = 1
+)]
+𝑡′,𝑖,𝑗
+. (14)
+If a transmission line is experiencing overloading at timestep 𝑖, then
+the grid operators may try to dispatch power to divert the flow to
+other areas of the grid. This may lead to other branches experiencing
+overloading at future timestep 𝑖 + 𝑛. Furthermore, overloading of a
+transmission line may also indicate high demand in a power grid zone,
+and this could also be a precursor or indicator of high demand in
+another zone, leading to overloading of the transmission line in that
+zone. The conditional probability is a meaningful statistical quantity
+that captures interdependence of the complex power flow in the grid for
+a given forecast of stochastic grid variables. Note that the conditional
+probability computation does not make any restrictive assumptions
+about parameters/capacities/properties/locations of transmission lines
+being considered. We simply use the knowledge of future grid behavior,
+learned by our GNN surrogate, to predict the conditional probability of
+a branch overloading when another branch is experiencing high power
+flow.
+The consequence of branch overloading, also with consideration of
+the degree of overloading, is defined as:
+𝑅𝑜(𝑡) = max
+{
+∫
+̃ 𝛾(𝑡)
+0
+𝐶𝑜(̃ 𝛾) 𝑑 ̃ 𝛾 , 0
+}
+. (15)
+The risk of standalone and multi-step load shedding can be computed
+as:
+𝐼
+𝑜 (𝑡) =
+𝑄∑
+𝑖=1
+E [𝑅𝑜(𝑡)]
+𝑖 , (16)
+𝐼+
+𝑜 (𝑡) =
+𝛥𝑇∑
+𝛥𝑡=1
+𝑄∑
+𝑖=1
+E [𝑅𝑜(𝑡 + 𝛥𝑡)]
+𝑖 , (17)
+and the overall risk can be obtained as:
+ℜ𝑜(𝑡) = 𝐼
+𝑜 (𝑡) + 𝐼+
+𝑜 (𝑡)
+=
+𝑄∑
+𝑖=1
+E [𝑅𝑜(𝑡)]
+𝑖 +
+𝛥𝑇∑
+𝛥𝑡=1
+𝑄∑
+𝑖=1
+E [𝑅𝑜(𝑡 + 𝛥𝑡)]
+𝑖 (18)
+=
+𝛥𝑇∑
+𝛥𝑡=0
+𝑄∑
+𝑖=1
+E [𝑅𝑜(𝑡 + 𝛥𝑡)]
+𝑖
+Following the definition of risk, Eq. (18) considers branch overloading
+risk for all transmission lines for the current (standalone) and future
+(multi-step) time horizons. Conditional probabilities are not used
+in risk computation, however, they could be useful for operators to
+explore the dependence between different transmission lines, and thus
+help arrive at more suitable risk-mitigation interventions to deal with
+branch overloading. The conditional probabilities are reported and the
+accuracy of GNN model-based conditional probability quantification is
+evaluated in this work.
+Applied Energy 380 (2025) 124793 
+6 
+
+===== PAGE 7 =====
+Y. Zhang et al.
+3.3. Training data generation
+Demonstration of the proposed methodology requires probabilistic
+forecasts for the grid. Since such forecasts are typically not available
+for synthetic power grids, we develop a method here for generating
+synthetic forecasts. We utilize an autoregressive model to account
+for temporal correlations for a given grid variable over the future
+time steps of interest. The spatial dependency between different grid
+variables is considered by specifying a covariance matrix. By incorpo-
+rating both temporal and spatial correlation, our methodology offers
+a robust framework for a nuanced simulation of grid dynamics, which
+is valuable in demonstrating the utility of probabilistic grid behavior
+analysis methods. Given a planning horizon (time steps) 𝑇 and marginal
+probability distributions 𝑖 (𝑖 ∈ 1, 2, … 𝑀) of grid variables, the
+procedure for generating 𝑁 spatio-temporally correlated training data
+samples for all time steps is shown in Algorithm 1. Note that this is to
+generate synthetic data that can mimic realistic power grid operation
+conditions only. In practice, however, GNN surrogate can be trained
+using historical data.
+Algorithm 1 Sampling spatio-temporally correlated stochastic grid
+variables
+Inputs: #samples 𝑁, #time steps 𝑇 , marginals 1, 2, ..., 𝑀,
+covariance matrix 𝐂 ∈ R𝑀×𝑀
+Start
+do: 𝐋 ← 𝐂 = 𝐋𝐋𝑇 ⊳ Cholesky factorization of covariance matrix
+𝐱0 ← 𝟎 ∈ R𝑁×𝑀 ⊳ Initialization
+for t = 1:T do:
+𝐱𝑡 ← 𝐱𝑡−1 + 𝜖 , 𝜖 ∼  (0, 1) ⊳ Random walk
+Markov chain
+𝐬𝑡 ← 𝐱𝑡∕
+√
+𝑡 ⊳ Obtain uncorrelated standard normal random
+variables
+𝐱𝑐
+𝑡 ← (𝐋𝐬′
+𝑡
+)′ ⊳ Obtain correlated normal random
+variables
+𝐮𝑡 ← 𝛷 (𝐱𝑐
+𝑡
+) ⊳ Compute CDF of correlated normal random
+variables
+End for
+for t = 1:𝑇 do:
+for i = 1:M do:
+𝐰𝑖
+𝑡 ← 𝛷−1
+𝑖
+(𝐮𝑖
+𝑡
+), 𝐮𝑖
+𝑡 ∈ R𝑁 ⊳ Draw correlated samples from
+specified marginal PDFs
+End for
+End
+Outputs: 𝐖𝑡 = [𝐰1
+𝑡 𝐰2
+𝑡 … 𝐰𝑀
+𝑡 ] consisting of stochastic variables with
+correlations specified by 𝐂. (The 𝑁 variables in the same column are
+from the same marginal probability distribution).
+We also develop a methodology to generate load shedding cause-
+aware training data to train GNN models that could identify the cause
+of (future) load shedding. Specifically, we differentiate between load
+shedding due to : (a) insufficient number of online generators, and
+(b) network congestion. If the maximum power output from the set of
+online generators cannot satisfy the minimum reserve requirement, and
+new generators cannot be quickly brought online due to ramp-up con-
+straints, then the SCUC optimizer may shed load to satisfy the minimum
+reserve requirement. This type of load shedding, caused by insufficient
+number of generators being online, is determined while computing
+(deciding) the generator on/off schedule. On the other hand, congestion
+refers to the physical limits of power transmission and distribution
+infrastructure represented using security constraints in decision-making
+algorithms. These security constraints could be violated due to outdated
+equipment, maintenance issues, or bottlenecks in certain parts of the
+grid. Even if an adequate number of generators are online, power
+cannot be effectively distributed to all areas if the security constraints
+are being violated. This leads to targeted load shedding to prevent
+equipment overload. When predicting future load shedding, it is of
+interest to the operator to know the cause of the problem (congestion
+or non-congestion related). This will allow the operator to implement
+a suitable problem-specific mitigation strategy.
+To distinguish the two causes, we propose to compute dispatch for a
+given RES and demand forecast under two set-ups: (1) generator on/off
+status (UC) is a decision variable, and (2) UC is fixed according to the
+optimal solution in step (1). In the first computation, both UC related
+constraints (e.g., generator ramp up/down and minimum/maximum
+online time constraints) and other security constraints have influence
+on dispatch decision, and thus impact load shedding. The algorithm
+may recommend to shed load if sufficient number of generators could
+not be brought online to satisfy power balance/reserve requirements or
+power generated by online generators could not be securely delivered
+to satisfy demand. This is load shedding due to congestion + non-
+congestion related reasons. In the second computation, the power
+generation capacity is pre-determined (the number of online generators
+is fixed), as a result, load shedding under this circumstance is only
+caused by security constraints, i.e., congestion related load shedding.
+Non-congestion related load shedding can then be obtained by sub-
+tracting the latter from the former. The implementation of the proposed
+load shedding cause-aware analysis is illustrated in Fig. 2.
+4. Numerical experiments
+We illustrate the utility of the GNN models using numerical
+experiments conducted on three synthetic grids: Case118 [90],
+Case1354pegase [91] and Case2848rte [92]. About 20% generators in
+each of the synthetic grids are taken to be RES generation units. The
+grids are partitioned into three, eight and sixteen zones, respectively.
+We highlight the following:
+• Grids are partitioned based on the geographic locations of buses. The
+details of zonal partitions can be found in Appendix A.
+• At the beginning of the training/testing exercise, the required number
+of samples are obtained from appropriate uniform distributions corre-
+sponding to each zone for each power grid. These samples represent
+the maximum generation capacity for thermal generators in that
+zone. These capacities are recorded and kept constant throughout the
+training/testing exercise.
+• Wind turbines are used to represent RES generators, and wind power
+will be preferably used to meet the load demand before thermal
+generators are taken into consideration.
+• For each zone, two random variables are considered: wind speed and
+load demand. They are sampled from corresponding marginal distri-
+bution. The number of random variables is thus twice of the number
+of zones for a power grid. The sampled wind speed is converted to
+aggregated wind power using an assumed power rating curve, and
+samples of load demand are considered as the aggregated demand.
+• The aggregated values are distributed to wind power generation and
+demand at individual wind turbines and load buses in the same zone,
+respectively, with fixed distribution factors [93].
+We consider an intra-day planning horizon of 𝑇 = 12 hours for SCUC
+calculation. Stochastic grid variables are sampled using Algorithm 1.
+Specifically, wind speed is assumed to follow a Weibull probability
+distribution (and converted to wind power) while load is described
+by a truncated normal probability distribution. The Latin hypercube
+sampling (LHS) technique is utilized for sampling grid variables from
+the corresponding (forecast) distributions in the first time step. The
+well-known power system optimal scheduling tool MATPOWER [90]
+is then used to formulate the corresponding SCUC problems, which
+are solved by using the state-of-the-art numerical solver Gurobi [94].
+Synthetic data is generated on a Windows computer with 128 GB
+memory and i9-13900K processor. It takes 0.5, 3, and 10 h to generate
+SCUC solutions for 1000 samples for Case118, Case1354pegase and
+Case2848rte, respectively.
+The GNN models are trained using a supervised learning approach
+in Python routines PyTorch [95] and PyG [96]. Inputs to the model
+Applied Energy 380 (2025) 124793 
+7 
+
+===== PAGE 8 =====
+Y. Zhang et al.
+Fig. 2. Separating congestion and non-congestion related load shedding. Power dispatch is computed twice: (1) violet labeled where all constraints are considered and the decision
+variables include UC and generator dispatch. Load shedding is impacted by both UC and security constraints (i.e., congestion + non-congestion related shedding); (2) green labeled
+where power dispatch is the only the decision variable, and the pre-computed UC solution is used (the maximum power generation capacity is determined). Load shedding depends
+only on security constraints (i.e., congestion related shedding). Then non-congestion related load shedding is obtained by subtracting the latter from the former.
+include wind generation and load, the grid topology and branch prop-
+erties. Outputs are the corresponding system/zonal aggregated thermal
+power generation and load shedding, as well as branch flow, for the
+planning period (12 h). Overall, 1000 SCUC solutions are generated
+for model training, validation, and testing with proportions 70%, 10%
+and 20%, respectively. The loss vs number of training data suggests that
+it is not necessary to use more samples in training process, as shown
+in Appendix B, and similar observation has been reported in [77].
+The hyper-parameters are systematically tuned using Ray Tune pack-
+age [97], and we focus on three key hyper-parameters: learning rate,
+embedding dimensions, and the number of GraphSAGE layers. Model
+prediction accuracy is used as the evaluation metric and the optimal
+combination is saved for subsequent model training. The GNN models
+are trained on a computer with 128 GB Intel Core i9-13900K processor
+and RTX A6000 graphical card with 48 GB memory. The convergence
+is observed as there is no more improvement on training loss after
+one third of the training time. The training time is 5, 7 and 7.5 h for
+Case118, Case1354pegase and Case2848rte, respectively.
+For the multi-step reliability and risk assessment, we consider 𝛥𝑇 =
+2 hours. This means that we compute aggregated reliability and risk
+over two hour-long windows starting at multiple future time instants.
+For demonstration purposes, we utilize a constant cost function by
+setting 𝐶𝑠 = $10∕𝑀 𝑊 and 𝐶𝑜 = $1∕𝑀 𝑊 in Eqs.  (7) and ( 15),
+respectively. Note, however, that it is possible to implement any cost
+function. We conduct experiments on the system and individual zones
+simultaneously, while the results are evaluated separately. By doing so,
+we aim at investigating the relative vulnerability of different zones and
+their contributions to the entire power grid. We compute the average
+loading percentage of all branches over training data. Based on the
+result, all branches are ranked in a descending order and those with
+average loading percentage close to or larger than 0.5 are selected.
+We refer to these branches as critical branches. We focus on these
+branches for branch overloading reliability and risk assessment, since
+the loading percentage on the remaining branches is far below the
+security threshold in > 90% operating conditions. The fraction of
+branch power flow security threshold is set as 𝜖 = 85%.
+5. Results
+The results of the numerical experiments with the three grids are
+discussed in this section. Firstly, to show that there is noticeable change
+in unit commitment over the 12-hour planning period, we plot the
+rate of change of generator ON/OFF status for all three grids. We then
+evaluate the performance of the GNN models in predicting the QoIs,
+and the results are shown in terms of mean relative error (MRE, %).
+Finally, we evaluate the accuracy of reliability and risk quantification
+based on the GNN predictions by comparing them with the reference
+reliability and risk estimates computed based on SCUC solutions.
+5.1. Evolution of thermal generator on/off status
+The average change in the unit commitment (i.e., percentage of
+thermal generators turned on or off) over the RUC horizon, for the
+testing data points, is shown in Fig. 3. All thermal generators are online
+(status: ON) at 𝑡 = 1 h and some of them are turned off at 𝑡 =
+2 h, because of low anticipated load demand. Thereafter, the forecast
+scenarios dictate when a generator will be turned on or off. A significant
+change in thermal generator on–off status proportionately impacts
+thermal power generation, branch power flow. The results in Fig. 3
+demonstrate that the testing data samples show significant change in
+the unit commitment over the RUC horizon. The risk quantification
+results under such evolving unit commitment are of interest in this
+work.
+5.2. GNN model predictions
+In this section, we evaluate the accuracy of the GNN model for
+system-level, zone-level, and branch-level QoI predictions. The predic-
+tion error for Case118 is shown in Fig. 4. The MRE of aggregated power
+generation at each time step within the RUC horizon remains below
+4%, indicating excellent accuracy. The MRE for system and zone II
+is below 2%. In zone I and III, the MRE is slightly higher but still
+maintains a good accuracy level with MRE mostly under 3%; the MRE
+goes beyond 3% at two future time steps. The load shedding prediction
+is also extremely accurate with the MRE less than 1% for zone I and 3%
+for other zones as well as the system. In terms of the GNN prediction
+for branch flow, only the results for critical branches are shown here.
+It is noticed that MRE is consistently below 1% for Case118, suggesting
+excellent predictive accuracy of the GNN model. The overall MREs
+(average of MREs over all time steps over all zones/branches) are
+summarized in Table 2.
+The system-level/zonal prediction results for Case1354pegase are
+summarized in Tables C.1 and C.2, and those for Case2848rte are
+shown in Tables C.4 and C.5, respectively. Even for these large grids
+GNN predictions exhibit good accuracy (MRE <5%) for all zones and
+the system at different time steps. The branch-level prediction results
+for the other two grids are shown in Tables C.3 and C.6, and GNN
+prediction MRE remains below 3% for these large grids. The average of
+MREs over all time steps over all zones/branches for these large grids
+are also summarized in Table 2. Overall, the GNN surrogates achieve
+excellent accuracy in predicting zonal/system level (aggregated) and
+branch-level quantities.
+On average, the numerical solver requires 12 𝑠, 78 𝑠 and 175 𝑠, re-
+spectively, to solve one SCUC problem for the three grids. It only takes
+the GNN model 2 × 10−4 𝑠, 10−3 𝑠 and 1.5 × 10−3 𝑠 respectively to obtain
+Applied Energy 380 (2025) 124793 
+8 
+
+===== PAGE 9 =====
+Y. Zhang et al.
+Fig. 3. Percentage change in unit commitment over the RUC horizon of interest (i.e., percentage of generators that change status from ‘ON to OFF’ or from ‘OFF to ON’ at each
+time step).
+Table 2
+Mean relative error (%) over all time steps over all zones/branches.
+Grid Mean relative error
+Zonal/system-level Zonal/system-level Power flow on
+thermal power generation load shedding critical branches
+Case118 2.05 1.87 1.01
+Case1354pegase 2.83 2.04 1.30
+Case2848rte 2.94 2.46 1.60
+Fig. 4. Mean relative error (%) of GNN prediction for Case118 QoIs. (a) Zonal/system-
+level thermal power generation; (b) zonal/system-level load shedding; (c) power flow
+on critical branches.
+the corresponding prediction. The speed-up achieved using the GNN
+surrogate model is thus capable of enabling real-time risk quantification
+with adequate accuracy.
+5.3. Reliability and risk predictions
+In this section, we evaluate the accuracy of GNN-based reliability
+and risk assessment by comparing it with SCUC-based assessment.
+5.3.1. Load shedding
+The probability of load shedding for Case118 is shown in Fig. 5(a).
+GNN-based reliability quantification is in agreement with the numerical
+SCUC solution-based quantification, for both the system and indi-
+vidual zones. The probabilities of standalone total (congestion and
+non-congestion-related) load shedding for zones I, II and III are around
+0.1, 0.4 and 0.5, respectively, suggesting that zone II and III have
+higher vulnerability than zone I. At the system level, the probability of
+load shedding is around 0.5 over the planning horizon. Probabilities of
+congestion and non-congestion-related load shedding are also estimated
+separately and shown in Figs. 5(b) and 5(c). The GNN model shows
+excellent predictive capability for cause-aware load shedding analysis.
+Congestion seems to be the primary cause of load shedding, as the
+corresponding load shedding probability is significantly higher than
+that due to non-congestion-related factors. These results suggest that
+GNN is capable of decoupling different factors that lead to the adverse
+event, thus it can be a useful tool to improve the operator’s situational
+awareness and enhance the system reliability. The multi-step reliability
+quantification is shown in Fig. 5(d). It is seen that GNN-based reliability
+calculation is very accurate (except for Zone I) and captures the trend
+of load shedding probability in future two-hour-long windows starting
+at each of the future hours of interest.
+There is noticeable difference between GNN-based multi-step load
+shedding probability and the reference solution for zone 1. We investi-
+gated possible reasons for this peculiarity, including network topology,
+load variability, and wind power generation in zone 1. However, we
+did not observe any features that distinguish zone 1 from other zones.
+When machine learning models are constructed to predict multiple
+outputs, the loss function minimization is in an aggregated sense over
+all the outputs, therefore it is possible that some outputs are poorly
+predicted.
+Not surprisingly, GNN-based risk quantification aligns well with
+that from the reference (SCUC-based) solution, as shown in Fig. 6. It is
+observed that the risk caused by load shedding gradually decreases over
+time. This is reasonable, because operators can take corrective actions
+to mitigate risk at time horizons farther away from the risk estimation
+time (𝑡 = 1). We also notice that zone I is significantly less risky than
+other zones, and the consequence cost almost drops to zero after 𝑇 = 8
+hours. In contrast, zone II exhibits the highest risk at around $5,000,
+slightly higher than that of zone III which is at $4,000. The system-level
+risk caused by load shedding experiences a slight drop from around
+$11,000 at 𝑡 = 1 h to $9,000 at 𝑡 = 12 h, and the trend is accurately
+captured by the GNN-based risk computation.
+The reliability and risk quantification of load shedding for
+Case1354pegase and Case2848rte are shown in Figs. 7 and 8, re-
+spectively. The percentage difference between GNN-based and SCUC-
+based reliability/risk quantification for load shedding is summarized
+Applied Energy 380 (2025) 124793 
+9 
+
+===== PAGE 10 =====
+Y. Zhang et al.
+Fig. 5. Reliability and risk quantification for load shedding (Case118). (a) Probability of (standalone) total load shedding, (b) probability of (standalone) congestion-related load
+shedding, (c) probability of (standalone) non-congestion-related load shedding, and (d) probability of (multi-step) total load shedding.
+Fig. 6. Risk of load shedding (Case118).
+Fig. 7. Reliability and risk quantification for load shedding (Case1354pegase). (a) Probability of standalone load shedding, (b) probability of multi-step load shedding, and (c)
+risk of load shedding.
+Table 3
+Percentage difference between GNN-based and SCUC-based probability/risk of load shedding for Case1354pegase over all time steps (computed
+using the predictions depicted in Fig. 7).
+Zone Standalone probability Multi-step probability Risk
+Min Mean Max Min Mean Max Min Mean Max
+S 0.13 1.13 3.54 1.05 5.28 7.66 0.04 1.24 2.77
+Z1 0.66 5.62 13.85 0.67 3.06 8.39 1.43 17.31 34.73
+Z2 1.33 4.53 10.61 0.80 3.50 7.05 0.75 14.37 24.74
+Z3 1.65 8.50 18.57 0.21 3.77 9.05 0.79 12.39 47.45
+Z4 0.65 3.18 9.58 1.94 5.30 8.45 1.05 6.05 12.31
+Z5 0.10 1.68 6.23 0.22 2.22 6.49 0.72 3.91 9.25
+Z6 0.60 3.44 7.28 0.11 2.02 4.84 0.52 5.61 13.22
+Z7 2.50 9.60 21.06 0.41 5.87 16.83 0.19 3.19 8.95
+Z8 1.34 6.30 13.69 1.12 2.70 5.36 1.25 11.08 21.65
+Applied Energy 380 (2025) 124793 
+10 
+
+===== PAGE 11 =====
+Y. Zhang et al.
+Fig. 8. Reliability and risk quantification for load shedding (Case2848rte). (a) Probability of standalone load shedding, (b) probability of multi-step load shedding, and (c) risk of
+load shedding.
+Table 4
+Percentage difference between GNN-based and SCUC-based probability/risk of load shedding for Case2848rte over all time steps (computed
+using the predictions depicted in Fig. 8).
+Zone Standalone probability Multi-step probability Risk
+Min Mean Max Min Mean Max Min Mean Max
+S 0.09 1.17 2.24 0.14 3.41 6.63 0.14 1.21 2.99
+Z1 0.27 3.67 5.92 0.61 3.82 11.03 0.47 3.60 7.22
+Z2 0.08 1.29 3.83 0.02 4.59 16.63 0.08 4.44 10.00
+Z3 1.42 5.09 11.24 0.24 3.45 12.51 0.42 3.16 7.46
+Z4 0.07 1.71 3.10 0.21 2.07 5.28 1.81 5.41 11.28
+Z5 0.04 1.77 3.71 0.40 3.59 7.48 0.24 2.39 8.03
+Z6 0.44 3.15 5.36 0.10 2.65 6.91 1.24 6.35 12.87
+Z7 1.02 5.10 10.44 0.34 2.80 5.38 3.84 10.84 28.85
+Z8 0.62 4.12 7.05 0.12 2.92 7.46 1.26 5.77 14.97
+Z9 0.42 3.18 6.66 0.08 1.81 4.55 0.07 5.26 13.40
+Z10 0.45 2.21 3.63 1.83 4.34 7.04 0.04 6.61 15.03
+Z11 0.20 4.68 10.70 0.22 0.93 2.45 1.13 3.36 8.89
+Z12 0.08 1.54 3.16 0.11 2.04 6.97 0.09 3.19 9.69
+Z13 0.37 1.97 3.71 0.03 3.01 6.17 0.05 5.02 19.96
+Z14 0.21 2.19 4.50 0.20 2.38 8.50 0.11 5.14 11.09
+Z15 0.16 5.97 11.00 0.19 3.12 7.09 1.01 3.18 8.19
+Z16 0.59 3.13 7.46 0.29 3.12 6.41 0.01 6.54 12.89
+in Tables 3 and 4, respectively. It can be seen that GNN-based risk
+quantification is in excellent agreement with the reference (SCUC-
+based) solution for individual zones as well as for the entire system.
+The results suggest that GNN can be used to facilitate risk management
+of large, real-world grids by speeding up the computation. Since well-
+trained GNN models are able to give QoI predictions for thousands
+of operational scenarios within a second, the GNN-based approach is
+thus appealing for hours-ahead reliability and risk assessment and man-
+agement. GNN predictions and the reference values (numerical solver
+outputs) of QoIs at all time steps are also provided in Supplementary
+Material.
+5.3.2. Branch overloading
+The probability of standalone branch overloading is shown in
+Fig. 9(a). It is observed that the GNN-based analysis for the selected
+(critical) branches is very accurate. We notice that the first branch is
+almost always overloaded with probability near 1 at all time steps, and
+the second and third branches are often overloaded with probabilities
+around 0.7 and 0.6, respectively. The fourth branch is overloaded with
+a probability of 0.5. The results also demonstrate that it is not necessary
+to include all the branches in reliability and risk assessment, since the
+overloading probability for the remaining the branches is smaller than
+0.5.
+The probabilities of multi-step branch overloading are shown in
+Fig. 9(b). Compared with standalone overloading, the probability of
+multi-step overloading for all branches is slightly elevated. In par-
+ticular, the first branch is still the most vulnerable one with the
+probability of overloading at 1 at all time steps. For the second and
+third branch, multi-step overloading probability is elevated to 0.9
+and 0.8, respectively. Overloading probability for the fourth branch
+increases to around 0.7. The risk associated with branch overloading
+is shown in Fig. 9(c). It is observed that the GNN-based risk quantifi-
+cation is slightly conservative compared to the reference (SCUC-based)
+solution (however, the error is negligibly small).
+The reliability and risk quantification results of branch overloading
+for Case1354pegase and Case2848rte are shown in Figs. 10 and 11,
+respectively, and the results confirm the good accuracy of GNN-based
+results compared to SCUC-based results (the percentage difference is
+summarized in Tables 5 and 6, respectively). This demonstrates the
+excellent accuracy of GNN-based risk quantification; hence the GNN
+surrogate model can be a valuable tool to enable fast risk quantifica-
+tion during power grid operation, thus supporting fast, risk-informed
+decision-making. GNN predictions and the reference values (numer-
+ical solver outputs) of QoIs at all time steps are also provided in
+Supplementary Material.
+For the numerical reference solution, we lowered the allowable
+maximum power flow for some transmission lines to encourage some
+branch overloading events. This helped generate synthetic data that
+mimics the spatial variability in transmission line loading percentage.
+It is possible that transmission lines with this reduced maximum power
+Applied Energy 380 (2025) 124793 
+11 
+
+===== PAGE 12 =====
+Y. Zhang et al.
+Fig. 9. Reliability and risk of branch overloading (Case118). (a) Probability of standalone branch overloading, (b) Probability of multi-step branch overloading, and (c) Risk of
+branch overloading.
+Fig. 10. Reliability and risk of branch overloading (Case1354pegase). (a) Probability of standalone branch overloading, (b) Probability of multi-step branch overloading, and (c)
+Risk of branch overloading.
+Fig. 11. Reliability and risk of branch overloading (Case2848rte). (a) Probability of standalone branch overloading, (b) Probability of multi-step branch overloading, and (c) Risk
+of branch overloading.
+flow limit are loaded beyond the threshold (85% of the maximum
+power flow limit) for the twelve hour period considered in our study. In
+practice, however, such transmission lines could be replaced to increase
+their capacity.
+6. Conclusion
+We investigated the utilization of graph neural network (GNN)
+as a proxy to facilitate hours-ahead decision-making in power grid
+operations, while accounting for anticipated changes in the unit com-
+mitment. To train the GNN model, spatio-temporally correlated samples
+of stochastic variables (wind power and load demand) are drawn from
+their joint probability (forecast) distribution, and the corresponding
+unit commitment and dispatch solutions are obtained using an numer-
+ical solver. The data (samples and numerical SCUC solutions) are used
+to train the GNN models following a supervised learning approach with
+stochastic grid variables (wind/solar generation and load) as inputs
+and SCUC solutions as outputs. Multiple GNN models are trained to
+predict different quantities of interest (QoIs), i.e., load shedding at
+Applied Energy 380 (2025) 124793 
+12 
+
+===== PAGE 13 =====
+Y. Zhang et al.
+Table 5
+Percentage difference between GNN-based and SCUC-based probability/risk of branch overloading for Case1354pegase over all time steps
+(computed using the predictions depicted in Fig. 10).
+Zone Standalone probability Multi-step probability
+Min Mean Max Min Mean Max
+b1 0.08 1.07 2.65 0.00 0.63 5.60
+b2 0.35 1.90 5.08 0.01 2.48 5.56
+b3 0.22 2.09 4.02 0.18 3.54 11.80
+b4 0.22 2.32 6.14 1.75 3.89 10.41
+b5 0.11 1.93 5.35 0.55 3.35 8.27
+b6 0.11 2.98 7.83 1.73 2.98 5.63
+b7 0.29 2.99 7.04 0.12 3.73 9.55
+b8 0.42 2.89 10.65 0.02 3.16 8.24
+Table 6
+Percentage difference between GNN-based and SCUC-based probability/risk of branch overloading for Case2848rte over all time steps (computed
+using the results depicted in Fig. 11).
+Zone Standalone probability Multi-step probability
+Min Mean Max Min Mean Max
+b1 0.00 0.34 1.70 0.37 1.87 3.99
+b2 0.64 2.99 6.45 2.44 6.39 13.41
+b3 0.05 2.39 6.90 0.08 2.68 5.68
+b4 0.02 2.92 8.97 0.08 3.68 9.81
+b5 0.03 2.49 7.03 0.06 2.64 8.08
+b6 1.18 3.68 9.56 0.47 3.74 7.49
+b7 0.00 2.54 6.85 0.67 3.27 6.87
+b8 0.56 2.45 4.46 0.35 2.44 5.99
+b9 0.08 1.67 5.98 0.06 3.05 10.31
+b10 0.01 2.37 6.46 0.91 3.17 7.13
+b11 0.10 2.79 5.66 1.98 6.38 13.23
+b12 0.23 1.96 4.06 0.19 3.37 6.73
+b13 0.04 2.98 8.98 1.03 3.61 8.78
+b14 0.33 2.98 5.51 0.47 1.82 3.99
+b15 0.02 3.24 8.43 1.38 5.78 13.59
+b16 1.24 4.21 10.87 0.63 3.29 8.49
+system/zonal level and power flow at branch level. The QoIs are then
+used for reliability and risk quantification using Monte Carlo sampling.
+Failure modes at system level (load shedding) and branch level (trans-
+mission line overloading) are considered. The methodology employs
+standalone and multi-step temporal views of failure events for hours-
+ahead risk assessment, and thus provides a comprehensive evaluation
+of risk associated with adverse events. The proposed GNN-based relia-
+bility and risk estimation methodology was demonstrated on medium
+to large realistic power grids. The excellent prediction accuracy and
+low computational cost of the GNN model indicate that GNN models
+can be good proxies for complicated computational tasks and fast
+decision-making in power grid operation. Our results also demonstrated
+that GNN models can provide accurate estimate of hours-ahead grid
+operational risk.
+The proposed GNN-based reliability and risk assessment method
+utilizes probabilistic forecasts over the next few hours to obtain the
+training data. The subsequently trained GNN proxies are only applica-
+ble to the probabilistic forecasts used for generating the training data.
+Future work needs to develop GNN proxies that can be generalized
+to a wide range of possible forecasts. The statistical distance between
+training data and out-of-distribution testing data could be used to gauge
+the performance of the GNN proxies by estimating the corresponding
+QoI prediction accuracy.
+CRediT authorship contribution statement
+Yadong Zhang: Writing – review & editing, Writing – original
+draft, Methodology, Investigation, Formal analysis, Conceptualization.
+Pranav M. Karve: Writing – review & editing, Methodology, Inves-
+tigation, Formal analysis, Conceptualization. Sankaran Mahadevan:
+Writing – review & editing, Resources, Funding acquisition, Concep-
+tualization.
+Declaration of competing interest
+The authors declare that they have no known competing finan-
+cial interests or personal relationships that could have appeared to
+influence the work reported in this paper.
+Acknowledgments
+This work was partly funded by the ARPA-E PERFORM program,
+USA (Grant no.: DE-AR0001280, Project technical monitor: Jonathan
+Glass) under subcontract to Georgia Tech (PI: Prof. Pascal Van Hen-
+tenryck). The support is gratefully acknowledged. The authors also
+acknowledge helpful discussions with Dr. Oliver Stover at Charles River
+Associates and Dr. Ray Daniel Zimmerman at Cornell University.
+Appendix A. Synthetic power grids
+The Case118 power grid is one of the widely used synthetic power
+grids [90], it contains 118 buses (54 generators, 99 loads and 186
+branches); the Case1354pegase power grid accurately represents the
+size and complexity of part of the European high voltage transmission
+network, it contains 1354 buses (260 generators, 621 loads and 1991
+branches). The data stems from the Pan European Grid Advanced
+Simulation and State Estimation (PEGASE) project, part of the 7th
+Framework Program of the European Union [91]; the Case2848rte
+power grid represents the size and complexity of French (very high volt-
+age) transmission network [92], it contains 2848 buses (270 generators,
+1388 loads and 3776 branches). The three power grids are partitioned
+into three, eight and sixteen zones, respectively, and each zone contains
+a certain number of load bus, thermal generators and wind turbines.
+For each zone, an aggregated value of load and wind power gen-
+eration are drawn from their respective probability distributions. The
+Applied Energy 380 (2025) 124793 
+13 
+
+===== PAGE 14 =====
+Y. Zhang et al.
+Table A.1
+Distribution parameters used for Case118 (𝜇-location parameter, 𝜎-scale parameter,
+𝑘-shape parameter, 𝑎-left truncation, 𝑏-right truncation; tn: truncation Gaussian dis-
+tribution, wb: Weibull distribution).
+Zone Dist. Parameters
+𝜇 𝑘 𝜎 𝑎 𝑏
+Z1 tn 50 – 15 10 90
+wb – 2 8 – –
+Z2 tn 75 – 20 25 125
+wb – 1.8 8.2 – –
+Z3 tb 100 – 15 60 140
+wb – 2.2 7.8 – –
+Table A.2
+Distribution parameters used for Case1354pegase (𝜇-location parameter, 𝜎-scale param-
+eter, 𝑘-shape parameter, 𝑎-left truncation, 𝑏-right truncation; tn: truncation Gaussian
+distribution, wb: Weibull distribution).
+Zone Dist. Parameters
+𝜇 𝑘 𝜎 𝑎 𝑏
+Z1 tn 50 – 15 10 90
+wb – 2 8 – –
+Z2 tn 75 – 20 25 125
+wb – 1.8 8.2 – –
+Z3 tn 100 – 15 60 140
+wb – 2.2 7.8 – –
+Z4 tn 48 – 12 9 87
+wb – 1.9 8.1 – –
+Z5 tn 81 – 21 23 139
+wb – 2.1 7.9 – –
+Z6 tn 98 – 15 60 136
+wb – 1.9 7.7 – –
+Z7 tn 52 – 14 7 97
+wb – 2.1 8 – –
+Z8 tn 83 – 20 21 145
+wb – 2.0 8.3 – –
+relative contribution of each load bus/wind turbine is assumed to be a
+constant in each zone. Consider zone 𝑖 containing 𝑁𝐿 load buses and
+𝑁𝑊 wind turbines; then the bus-level load and wind power for zone 𝑖
+are calculated as:
+𝐿𝑖,𝑗 = 𝑟𝑖,𝑗 𝐿𝑖, 𝑗 = 1, 2, … , 𝑁𝐿
+𝑃𝑖,𝑘= 𝑞𝑖,𝑘𝑃𝑖, 𝑘 = 1, 2, … , 𝑁𝑊
+(A.1)
+where 𝑟𝑖,𝑗 and 𝑞𝑖,𝑘 represent the distribution factor of load bus 𝑗 and
+wind turbine 𝑘 to the corresponding aggregated values in zone 𝑖, while
+𝐿𝑖 and 𝑃𝑖 denote the aggregated values, and 𝐿𝑖 and 𝑊𝑖 denote the
+aggregated values for zone 𝑖. It is assumed that load follows truncated
+normal PDF, whereas wind power generation is converted from wind
+speed, which is assumed to follow Weibull PDF. The parameters used
+for each probability distribution are summarized in Tables A.1–A.3.
+Aggregated wind power generation is computed from wind speed
+as:
+𝑃 =
+⎧
+⎪
+⎨
+⎪⎩
+max (0, 𝑃𝑟
+(𝑣3 − 𝑣3
+𝑚𝑖𝑛
+)∕ (𝑣3
+𝑚𝑎𝑥 − 𝑣3
+𝑚𝑖𝑛
+)), 𝑣 < 𝑣𝑚𝑖𝑛
+𝑃𝑟
+(𝑣3 − 𝑣3
+𝑚𝑖𝑛
+)∕ (𝑣3
+𝑚𝑎𝑥 − 𝑣3
+𝑚𝑖𝑛
+), 𝑣𝑚𝑖𝑛 ≤ 𝑣 ≤ 𝑣𝑚𝑎𝑥
+min (𝑃𝑟, 𝑃𝑟
+(𝑣3 − 𝑣3
+𝑚𝑖𝑛
+)∕ (𝑣3
+𝑚𝑎𝑥 − 𝑣3
+𝑚𝑖𝑛
+)), 𝑣 > 𝑣𝑚𝑎𝑥
+(A.2)
+where 𝑣𝑚𝑖𝑛 represents the minimum wind speed that can rotate wind
+turbine, and 𝑣𝑚𝑎𝑥 denotes wind speed at which maximum power gen-
+eration limits is reached. 𝑃𝑟 is the wind power generation at 𝑣𝑚𝑎𝑥. In
+this work, 𝑣𝑚𝑖𝑛 = 1 𝑚𝑠−1, 𝑣𝑚𝑎𝑥 = 15 𝑚𝑠−1 and 𝑃𝑟 = 100 𝑀 𝑊 .
+Appendix B. GNN model training
+See Fig. B.1.
+Table A.3
+Distribution parameters used for Case2848rte (𝜇-location parameter, 𝜎-scale parameter,
+𝑘-shape parameter, 𝑎-left truncation, 𝑏-right truncation; tn: truncation Gaussian distri-
+bution, wb: Weibull distribution).
+Zone Dist. Parameters
+𝜇 𝑘 𝜎 𝑎 𝑏
+Z1 tn 50 – 15 10 90
+wb – 2 8 – –
+Z2 tn 75 – 20 25 125
+wb – 1.8 8.2 – –
+Z3 tn 100 – 15 60 140
+wb – 2.2 7.8 – –
+Z4 tn 48 – 12 9 87
+wb – 1.9 8.1 – –
+Z5 tn 81 – 21 23 139
+wb – 2.1 7.9 – –
+Z6 tn 98 – 15 60 136
+wb – 1.9 7.7 – –
+Z7 tn 52 – 14 7 97
+wb – 2.1 8 – –
+Z8 tn 83 – 20 21 145
+wb – 2.0 8.3 – –
+Z9 tn 45 – 12 14 76
+wb – 1.8 7.8 – –
+Z10 tn 85 – 18 25 145
+wb – 1.8 8.1 – –
+Z11 tn 98 – 16 55 141
+wb – 8.1 12.5 – –
+Z12 tn 53 – 13 9 97
+wb – 2.2 8.5 – –
+Z13 tn 84 – 20 23 139
+wb – 1.8 7.5 – –
+Z14 tn 98 – 15 55 141
+wb – 2 7.7 – –
+Z15 tn 47 – 12 8 86
+wb – 2 8 – –
+Z16 tn 85 – 20 21 149
+wb – 2.5 8.3 – –
+Fig. B.1. Training loss vs epochs for Case118.
+Appendix C. Model prediction error
+See Tables C.1–C.6.
+Appendix D. Supplementary data
+Supplementary material related to this article can be found online
+at https://doi.org/10.1016/j.apenergy.2024.124793.
+Applied Energy 380 (2025) 124793 
+14 
+
+===== PAGE 15 =====
+Y. Zhang et al.
+Table C.1
+Mean relative error (%) of zonal/system-level thermal power generation (Case1353pegase). It is computed as the average of prediction error over all testing
+data at each time step.
+Zone Mean relative error (%)
+𝑡1 𝑡2 𝑡3 𝑡4 𝑡5 𝑡6 𝑡7 𝑡8 𝑡9 𝑡10 𝑡11 𝑡12
+S 2.46 2.54 2.98 3.05 3.11 3.04 2.30 2.38 3.02 2.50 2.52 3.12
+Z1 4.14 3.75 3.37 3.96 3.69 3.82 4.03 3.65 3.69 3.87 3.84 3.46
+Z2 3.24 3.95 3.66 3.50 3.69 3.44 3.49 3.80 3.73 3.49 3.57 3.43
+Z3 3.53 3.11 3.55 3.77 3.10 3.68 3.36 3.73 3.75 3.73 3.54 3.61
+Z4 1.25 1.03 1.12 1.11 0.64 1.32 1.23 1.39 1.07 0.99 0.90 1.16
+Z5 2.66 3.21 3.52 3.47 3.45 2.92 3.28 3.10 3.23 2.84 3.18 2.62
+Z6 2.33 1.94 1.80 1.97 1.80 2.55 1.92 1.74 1.75 2.39 2.47 1.67
+Z7 2.18 2.95 2.57 2.98 2.64 2.83 2.48 2.88 2.44 2.41 2.48 2.45
+Z8 3.32 2.85 2.85 2.89 2.90 3.14 2.66 3.20 2.73 3.44 2.61 3.28
+Table C.2
+Mean relative error (%) of zonal/system-level load shedding (Case1353pegase). It is computed as the average of prediction error over all testing data at
+each time step.
+Zone Mean relative error (%)
+𝑡1 𝑡2 𝑡3 𝑡4 𝑡5 𝑡6 𝑡7 𝑡8 𝑡9 𝑡10 𝑡11 𝑡12
+S 2.79 3.38 3.65 2.70 3.21 3.51 3.31 3.42 2.99 3.62 3.41 3.24
+Z1 0.21 0.45 0.75 0.51 0.51 0.69 0.59 0.72 0.67 0.88 0.59 0.98
+Z2 2.54 2.31 2.52 2.33 3.05 2.26 2.84 2.77 3.04 2.42 3.07 2.57
+Z3 3.38 2.92 3.50 2.95 2.79 3.01 2.71 3.44 2.77 3.00 3.57 3.61
+Z4 2.20 2.57 2.00 2.34 2.65 2.28 2.33 1.78 2.10 1.82 2.05 2.08
+Z5 1.56 0.83 1.22 1.10 1.42 1.13 0.83 1.67 1.55 1.66 1.20 1.39
+Z6 1.21 1.29 0.96 0.99 0.72 1.00 0.94 1.25 1.26 1.17 0.99 0.76
+Z7 3.64 3.00 3.16 3.64 3.10 2.98 3.18 3.24 3.52 2.73 3.13 3.44
+Z8 1.31 1.18 0.63 0.94 1.16 0.89 1.10 1.27 0.75 0.64 0.93 0.70
+Table C.3
+Mean relative error (%) of power flow on critical branches (Case1354pegase). It is computed as the average of prediction error over all testing data at each
+time step.
+Branch Mean error at each time step
+𝑡1 𝑡2 𝑡3 𝑡4 𝑡5 𝑡6 𝑡7 𝑡8 𝑡9 𝑡10 𝑡11 𝑡12
+b1 1.55 1.37 1.10 1.51 1.48 1.73 1.90 1.06 1.16 1.96 1.20 1.21
+b2 1.20 1.31 1.26 0.60 1.47 0.86 1.13 0.95 0.60 1.07 1.41 0.94
+b3 1.51 1.47 1.38 1.74 1.33 1.59 1.31 1.34 1.24 1.69 1.21 1.26
+b4 0.62 0.82 1.16 1.06 0.41 0.27 1.03 0.51 0.58 1.06 1.05 0.74
+b5 2.29 1.81 1.49 1.71 1.91 2.14 1.76 1.91 2.26 2.13 1.77 2.02
+b6 1.15 1.12 0.66 1.14 1.01 0.66 0.55 1.46 0.78 0.58 0.91 0.88
+b7 2.47 2.43 2.07 2.48 2.48 2.35 1.65 1.86 1.79 1.83 1.78 2.13
+b8 0.40 1.29 0.38 0.88 0.42 1.04 0.47 0.55 1.26 0.66 0.67 1.16
+Table C.4
+Mean relative error (%) of zonal/system-level thermal power generation (Case2848rte). It is computed as the average of prediction error over all testing
+data at each time step.
+Zone Mean error at each time step
+𝑡1 𝑡2 𝑡3 𝑡4 𝑡5 𝑡6 𝑡7 𝑡8 𝑡9 𝑡10 𝑡11 𝑡12
+S 3.31 2.80 2.81 3.42 3.51 3.12 2.74 3.33 3.05 3.19 3.40 3.02
+Z1 4.14 4.32 4.29 3.91 3.71 4.41 4.12 3.97 4.15 3.91 3.95 4.27
+Z2 4.18 3.94 4.02 3.88 4.20 3.78 4.22 4.45 3.78 4.35 4.03 4.40
+Z3 4.16 4.14 3.95 4.02 4.00 3.78 3.87 3.86 3.39 4.06 3.98 4.13
+Z4 1.09 1.01 0.92 1.18 0.71 1.26 1.57 1.52 1.50 0.97 1.33 1.15
+Z5 3.58 3.19 3.53 2.97 3.62 3.22 3.09 3.25 3.09 3.84 3.21 3.03
+Z6 1.94 2.58 2.66 1.86 1.95 2.72 2.34 2.75 2.41 2.60 2.25 2.65
+Z7 2.70 2.67 2.74 2.71 3.16 2.69 2.69 2.73 2.74 2.98 2.50 3.04
+Z8 3.06 3.77 2.94 3.61 3.16 2.89 3.53 3.80 2.81 3.04 3.26 3.57
+Z9 2.15 2.09 1.77 1.62 1.62 1.87 1.91 1.91 1.56 2.12 1.97 1.44
+Z10 2.09 2.30 1.46 1.53 2.44 2.24 2.19 2.32 1.68 1.56 2.20 1.93
+Z11 3.77 3.50 3.29 3.40 3.69 3.75 3.99 3.70 3.51 3.14 3.52 3.42
+Z12 3.50 3.86 4.14 3.91 3.82 3.89 4.20 4.10 4.02 3.55 3.51 4.20
+Z13 3.99 3.89 4.12 4.17 4.24 3.92 4.43 4.01 3.79 3.68 4.46 3.94
+Z14 3.92 3.37 3.94 3.87 3.95 4.12 4.01 3.61 4.14 3.25 4.01 4.05
+Z15 1.17 1.26 1.60 1.03 1.13 1.11 1.34 0.65 0.69 0.75 1.46 0.93
+Z16 1.52 1.46 1.70 1.73 1.73 0.96 1.80 1.86 1.13 1.68 1.32 1.37
+Applied Energy 380 (2025) 124793 
+15 
+
+===== PAGE 16 =====
+Y. Zhang et al.
+Table C.5
+Mean relative error (%) of zonal/system-level load shedding (Case2848rte). It is computed as the average of prediction error over all testing data at each
+time step.
+Zone Mean error at each time step
+𝑡1 𝑡2 𝑡3 𝑡4 𝑡5 𝑡6 𝑡7 𝑡8 𝑡9 𝑡10 𝑡11 𝑡12
+S 3.11 3.73 3.53 3.36 2.96 3.19 3.49 3.26 3.25 3.43 3.33 3.46
+Z1 1.16 1.37 1.08 1.47 0.88 0.65 0.86 0.68 1.39 0.61 1.19 1.11
+Z2 3.22 2.60 3.26 2.75 3.16 2.70 3.28 2.73 2.57 2.79 2.49 3.22
+Z3 2.90 3.13 3.69 3.73 3.20 3.57 3.00 3.34 3.65 3.28 3.34 2.79
+Z4 2.35 2.08 2.30 2.33 2.77 2.04 2.43 2.31 2.63 2.34 2.04 2.88
+Z5 1.94 2.05 1.59 1.78 1.69 1.77 1.44 1.48 1.20 1.48 1.42 1.73
+Z6 1.66 1.57 1.39 1.16 2.07 1.43 1.59 2.07 1.53 1.41 1.61 1.67
+Z7 3.64 2.85 3.25 3.56 3.50 3.37 2.82 3.13 3.34 3.08 3.29 3.46
+Z8 1.17 1.06 1.35 1.12 1.19 1.89 1.37 1.23 1.76 1.11 1.75 1.48
+Z9 1.36 0.91 0.95 1.41 0.81 1.01 1.31 0.99 1.15 1.69 1.69 1.33
+Z10 3.09 2.57 3.53 3.13 3.35 3.12 3.43 3.14 3.26 2.70 2.98 3.25
+Z11 3.46 3.80 3.53 3.87 4.18 3.45 4.16 3.93 3.95 3.56 3.80 3.66
+Z12 0.55 0.54 0.96 1.26 1.07 0.90 0.68 1.35 1.11 1.29 1.36 1.12
+Z13 2.82 2.65 2.06 2.79 2.21 2.50 2.55 2.52 2.88 2.21 2.05 2.89
+Z14 3.68 3.39 3.35 3.05 3.28 3.03 3.65 3.01 3.14 3.51 3.23 3.59
+Z15 3.14 2.69 2.43 3.15 3.12 2.73 3.20 2.72 2.59 3.17 3.07 2.85
+Z16 3.31 2.88 3.56 3.63 2.98 3.53 2.98 2.69 2.71 2.85 2.73 2.92
+Table C.6
+Mean relative error (%) of power flow on critical branches (Case2848rte). It is computed as the average of prediction error over all testing data at each
+time step.
+Branch Mean error at each time step
+𝑡1 𝑡2 𝑡3 𝑡4 𝑡5 𝑡6 𝑡7 𝑡8 𝑡9 𝑡10 𝑡11 𝑡12
+b1 2.17 1.53 2.17 1.63 1.79 2.30 2.18 1.69 1.53 1.73 1.36 1.61
+b2 1.49 0.71 1.29 1.30 0.80 1.08 0.73 1.59 1.68 0.76 1.59 1.27
+b3 1.80 1.69 1.64 1.08 1.27 1.61 1.83 1.31 1.35 1.91 2.04 1.95
+b4 2.47 2.71 2.47 2.45 2.29 2.35 2.16 2.62 2.49 2.70 2.74 2.25
+b5 0.95 0.96 0.61 0.40 0.37 0.22 0.29 0.26 0.19 0.98 0.97 0.61
+b6 1.04 0.64 0.40 0.77 0.81 0.39 0.83 1.30 0.70 0.64 1.11 1.06
+b7 1.99 2.31 2.22 1.97 1.79 1.99 2.13 2.34 1.93 2.32 1.88 2.33
+b8 2.84 2.84 2.67 2.37 2.76 2.92 2.69 3.05 3.04 2.23 2.09 2.23
+b9 1.27 1.30 0.55 0.70 0.89 0.61 0.80 1.04 0.84 1.06 0.87 0.34
+b10 1.83 1.93 1.84 1.79 1.94 1.88 1.53 1.71 2.38 1.46 1.48 1.72
+b11 2.81 3.22 3.22 3.22 2.34 2.89 2.75 2.40 3.17 2.47 3.23 2.81
+b12 0.71 0.91 0.71 0.93 1.12 1.24 1.01 0.83 1.10 0.96 0.88 0.84
+b13 0.67 0.91 0.96 1.36 1.19 1.23 0.84 0.81 1.12 1.17 0.58 0.60
+b14 0.73 0.43 1.23 1.11 0.79 0.49 0.41 1.25 0.98 1.13 0.66 0.52
+b15 0.85 1.41 1.02 1.21 1.35 0.80 0.63 1.28 1.51 1.50 1.04 1.18
+b16 3.18 3.35 2.61 2.85 2.86 3.14 2.87 3.30 3.29 2.52 2.75 3.43
+Data availability
+All data and code used in this work can be downloaded at: https:
+//github.com/yadong-zhang/GNN_SCUC.
+References
+[1] Mittelman G, Eran R, Zhivin L, Eisenhändler O, Luzon Y, Tshuva M. The potential
+of renewable electricity in isolated grids: The case of Israel in 2050. Appl Energy
+2023;349:121325.
+[2] Shang Y, Liu M, Shao Z, Jian L. Internet of smart charging points with
+photovoltaic integration: A high-efficiency scheme enabling optimal dispatching
+between electric vehicles and power grids. Appl Energy 2020;278:115640.
+[3] Lee ZJ, Pang JZ, Low SH. Pricing EV charging service with demand charge.
+Electr Power Syst Res 2020;189:106694.
+[4] Wang W, Sun B, Li H, Sun Q, Wennersten R. An improved min-max power
+dispatching method for integration of variable renewable energy. Appl Energy
+2020;276:115430.
+[5] Li J, Zhou J, Chen B. Review of wind power scenario generation methods for
+optimal operation of renewable energy systems. Appl Energy 2020;280:115992.
+[6] Matsuo Y, Endo S, Nagatomi Y, Shibata Y, Komiyama R, Fujii Y. Investigating
+the economics of the power sector under high penetration of variable renewable
+energies. Appl Energy 2020;267:113956.
+[7] Ding Y, Morstyn T, McCulloch MD. Distributionally robust joint chance-
+constrained optimization for networked microgrids considering contingencies and
+renewable uncertainty. IEEE Trans Smart Grid 2022;13(3):2467–78.
+[8] Hlalele TG, Naidoo RM, Bansal RC, Zhang J. Multi-objective stochastic economic
+dispatch with maximal renewable penetration under renewable obligation. Appl
+Energy 2020;270:115120.
+[9] Ponciroli R, Stauff NE, Ramsey J, Ganda F, Vilim RB. An improved genetic
+algorithm approach to the unit commitment/economic dispatch problem. IEEE
+Trans Power Syst 2020;35(5):4005–13.
+[10] Lagos DT, Hatziargyriou ND. Data-driven frequency dynamic unit commit-
+ment for island systems with high RES penetration. IEEE Trans Power Syst
+2021;36(5):4699–711.
+[11] Jiang S, Gao S, Pan G, Liu Y, Wu C, Wang S. Congestion-aware robust
+security constrained unit commitment model for AC-DC grids. Appl Energy
+2021;304:117392.
+[12] Psarros GN, Dratsas PA, Papathanassiou SA. A comparison between central-
+and self-dispatch storage management principles in island systems. Appl Energy
+2021;298:117181.
+[13] Moretti L, Martelli E, Manzolini G. An efficient robust optimization model for
+the unit commitment and dispatch of multi-energy systems and microgrids. Appl
+Energy 2020;261:113859.
+[14] Isuru M, Hotz M, Gooi H, Utschick W. Network-constrained thermal unit com-
+mitment for hybrid AC/DC transmission grids under wind power uncertainty.
+Appl Energy 2020;258:114031.
+[15] Sedzro KSA, Kishore S, Lamadrid AJ, Zuluaga LF. Stochastic risk-sensitive market
+integration for renewable energy: Application to ocean wave power plants. Appl
+Energy 2018;229:474–81.
+[16] Mohseni-Bonab SM, Kamwa I, Rabiee A, Chung C. Stochastic optimal trans-
+mission Switching: A novel approach to enhance power grid security margins
+through vulnerability mitigation under renewables uncertainties. Appl Energy
+2022;305:117851.
+[17] Adefarati T, Bansal R. Reliability and economic assessment of a microgrid
+power system with the integration of renewable energy resources. Appl Energy
+2017;206:911–33.
+[18] Stover O, Karve P, Mahadevan S. Reliability and risk metrics to assess operational
+adequacy and flexibility of power grids. Reliab Eng Syst Saf 2023;231:109018.
+Applied Energy 380 (2025) 124793 
+16 
+
+===== PAGE 17 =====
+Y. Zhang et al.
+[19] Castelli AF, Pilotti L, Monchieri A, Martelli E. Optimal design of aggregated en-
+ergy systems with (N-1) reliability: MILP models and decomposition algorithms.
+Appl Energy 2024;356:122002.
+[20] Juanpera M, Ferrer-Martí L, Pastor R. Multi-stage optimization of rural electri-
+fication planning at regional level considering multiple criteria. Case study in
+Nigeria. Appl Energy 2022;314:118926.
+[21] Lyu C, Jia Y, Xu Z. A novel communication-less approach to economic dispatch
+for microgrids. IEEE Trans Smart Grid 2020;12(1):901–4.
+[22] Samsatli S, Samsatli NJ. A multi-objective MILP model for the design and
+operation of future integrated multi-vector energy networks capturing detailed
+spatio-temporal dependencies. Appl Energy 2018;220:893–920.
+[23] Cao Y, Wei W, Mei S, Shafie-Khah M, Catalao JP. Analyzing and quantifying the
+intrinsic distributional robustness of cvar reformulation for chance-constrained
+stochastic programs. IEEE Trans Power Syst 2020;35(6):4908–11.
+[24] Rayati M, Bozorg M, Cherkaoui R, Carpita M. Distributionally robust chance con-
+strained optimization for providing flexibility in an active distribution network.
+IEEE Trans Smart Grid 2022;13(4):2920–34.
+[25] Cao X, Wang J, Zeng B. Networked microgrids planning through chance con-
+strained stochastic conic programming. IEEE Trans Smart Grid 2019;10(6):6619–
+28.
+[26] Gu N, Wang H, Zhang J, Wu C. Bridging chance-constrained and robust
+optimization in an emission-aware economic dispatch with energy storage. IEEE
+Trans Power Syst 2021;37(2):1078–90.
+[27] Kirilenko A, Gong Y, Chung C. A framework for power system operational
+planning under uncertainty using coherent risk measures. IEEE Trans Power Syst
+2021;36(5):4376–86.
+[28] Ghorani R, Pourahmadi F, Moeini-Aghtaie M, Fotuhi-Firuzabad M, Shahideh-
+pour M. Risk-based networked-constrained unit commitment considering corre-
+lated power system uncertainties. IEEE Trans Smart Grid 2019;11(2):1781–91.
+[29] Xu Y, Mili L, Sandu A, von Spakovsky MR, Zhao J. Propagating uncertainty in
+power system dynamic simulations using polynomial chaos. IEEE Trans Power
+Syst 2018;34(1):338–48.
+[30] Gao H, Lyu X, He S, Wang L, Wang C, Liu J. Integrated planning of cyber-
+physical active distribution system considering multidimensional uncertainties.
+IEEE Trans Smart Grid 2022;13(4):3145–59.
+[31] Xu J, Chen Y, Liao S, Sun Y, Yao L, Fu H, et al. Demand side industrial
+load control for local utilization of wind power in isolated grids. Appl Energy
+2019;243:47–56.
+[32] Liu J, Zhang Y, Meng K, Dong ZY, Xu Y, Han S. Real-time emergency load
+shedding for power system transient stability control: A risk-averse deep learning
+method. Appl Energy 2022;307:118221.
+[33] Luo N, Langevin J, Chandra-Putra H, Lee SH. Quantifying the effect of multiple
+load flexibility strategies on commercial building electricity demand and services
+via surrogate modeling. Appl Energy 2022;309:118372.
+[34] Wang Q, Miao C, Tang Y. Power shortage support strategies considering
+unified gas-thermal inertia in an integrated energy system. Appl Energy
+2022;328:120229.
+[35] Li B, Feng C, Siebenschuh C, Zhang R, Spyrou E, Krishnan V, et al. Sizing ramping
+reserve using probabilistic solar forecasts: A data-driven method. Appl Energy
+2022;313:118812.
+[36] Mohan V, Singh JG, Ongsakul W. An efficient two stage stochastic optimal energy
+and reserve management in a microgrid. Appl Energy 2015;160:28–38.
+[37] Heleno M, Matos MA, Lopes JP. Availability and flexibility of loads for the
+provision of reserve. IEEE Trans Smart Grid 2014;6(2):667–74.
+[38] Morales-España G, Baldick R, García-González J, Ramos A. Power-capacity and
+ramp-capability reserves for wind integration in power-based UC. IEEE Trans
+Sustain Energy 2015;7(2):614–24.
+[39] Gong Y, Jiang Q, Baldick R. Ramp event forecast based wind power ramp control
+with energy storage system. IEEE Trans Power Syst 2015;31(3):1831–44.
+[40] Dolanyi M, Bruninx K, Toubeau J-F, Delarue E. Risk-based constraints for
+the optimal operation of an energy community. IEEE Trans Smart Grid
+2022;13(6):4551–61.
+[41] Ryu Y, Lee H-W. A real-time framework for matching prosumers with minimum
+risk in the cluster of microgrids. IEEE Trans Smart Grid 2020;11(4):2832–44.
+[42] Nikkhah S, Sarantakos I, Zografou-Barredo N-M, Rabiee A, Allahham A,
+Giaouris D. A joint risk-and security-constrained control framework for real-
+time energy scheduling of islanded microgrids. IEEE Trans Smart Grid
+2022;13(5):3354–68.
+[43] Neyestani N, Yazdani-Damavandi M, Shafie-Khah M, Chicco G, Catalão JP.
+Stochastic modeling of multienergy carriers dependencies in smart local networks
+with distributed energy resources. IEEE Trans Smart Grid 2015;6(4):1748–62.
+[44] Lee XY, Sarkar S, Wang Y. A graph policy network approach for volt-var control
+in power distribution systems. Appl Energy 2022;323:119530.
+[45] Lu J, Zhang C, Li J, Zhao Y, Qiu W, Li T, et al. Graph convolutional networks-
+based method for estimating design loads of complex buildings in the preliminary
+design stage. Appl Energy 2022;322:119478.
+[46] Liu M, Gao H, Ji S. Towards deeper graph neural networks. In: Proceedings of
+the 26th ACM SIGKDD international conference on knowledge discovery & data
+mining. 2020, p. 338–48.
+[47] Feng J, Chen Y, Li F, Sarkar A, Zhang M. How powerful are k-hop message
+passing graph neural networks. Adv Neural Inf Process Syst 2022;35:4776–90.
+[48] Liu Z, Zhou J. Introduction to graph neural networks. Springer Nature; 2022.
+[49] Fan W, Ma Y, Li Q, He Y, Zhao E, Tang J, et al. Graph neural networks for
+social recommendation. In: The world wide web conference. 2019, p. 417–26.
+[50] Min S, Gao Z, Peng J, Wang L, Qin K, Fang B. STGSN—A spatial–temporal graph
+neural network framework for time-evolving social networks. Knowl-Based Syst
+2021;214:106746.
+[51] Zhang Z, Zhuang F, Zhu H, Shi Z, Xiong H, He Q. Relational graph neu-
+ral network with hierarchical attention for knowledge graph completion. In:
+Proceedings of the AAAI conference on artificial intelligence. 34, 2020, p.
+9612–9.
+[52] Jacob RA, Senemmar S, Zhang J. Fault diagnostics in shipboard power systems
+using graph neural networks. In: 2021 IEEE 13th international symposium on
+diagnostics for electrical machines, power electronics and drives. SDEMPED, Vol.
+1, IEEE; 2021, p. 316–21.
+[53] Owerko D, Gama F, Ribeiro A. Predicting power outages using graph neural
+networks. In: 2018 ieee global conference on signal and information processing
+(globalsip). IEEE; 2018, p. 743–7.
+[54] Donon B, Clément R, Donnot B, Marot A, Guyon I, Schoenauer M. Neu-
+ral networks for power flow: Graph neural solver. Electr Power Syst Res
+2020;189:106547.
+[55] Wu D, Lin W. Efficient residential electric load forecasting via transfer learning
+and graph neural networks. IEEE Trans Smart Grid 2022;14(3):2423–31.
+[56] Kundacina O, Gojic G, Cosovic M, Miskovic D, Vukobratovic D. Scalability and
+sample efficiency analysis of graph neural networks for power system state
+estimation. In: 2023 international balkan conference on communications and
+networking (balkanCom). IEEE; 2023, p. 1–6.
+[57] Kundacina O, Cosovic M, Vukobratovic D. State estimation in electric power
+systems leveraging graph neural networks. In: 2022 17th international conference
+on probabilistic methods applied to power systems. PMAPS, IEEE; 2022, p. 1–6.
+[58] Moshtagh S, Sifat AI, Azimian B, Pal A. Time-synchronized state estimation using
+graph neural networks in presence of topology changes. In: 2023 North American
+power symposium. NAPS, IEEE; 2023, p. 1–6.
+[59] Falconer T, Mones L. Leveraging power grid topology in machine learning
+assisted optimal power flow. IEEE Trans Power Syst 2022;38(3):2234–46.
+[60] Diehl F. Warm-starting AC optimal power flow with graph neural networks. In:
+33rd conference on neural information processing systems (NeurIPS 2019). 2019,
+p. 1–6.
+[61] Chen Y, Wang Q, Wang X, Guan Y. Applying robust optimization to MISO look-
+ahead commitment. In: 2014 IEEE PES general meeting| conference & exposition.
+IEEE; 2014, p. 1–5.
+[62] Zhou Y, Shahidehpour M, Wei Z, Sun G, Chen S. Multistage robust look-ahead
+unit commitment with probabilistic forecasting in multi-carrier energy systems.
+IEEE Trans Sustain Energy 2020;12(1):70–82.
+[63] Park S, Chen W, Han D, Tanneau M, Van Hentenryck P. Confidence-aware graph
+neural networks for learning reliability assessment commitments. IEEE Trans
+Power Syst 2023.
+[64] Chen Y, Savageau D, Wang F, Casto A. Voltage and local reliability commitment
+under electricity market operations. In: 2016 IEEE power and energy society
+general meeting. PESGM, IEEE; 2016, p. 1–5.
+[65] Goleijani S, Ghanbarzadeh T, Nikoo FS, Moghaddam MP. Reliability con-
+strained unit commitment in smart grid environment. Electr Power Syst Res
+2013;97:100–8.
+[66] Billinton R, Fotuhi-Firuzabad M. A reliability framework for generating unit
+commitment. Electr Power Syst Res 2000;56(1):81–8.
+[67] Xavier AS, Qiu F, Wang F, Thimmapuram PR. Transmission constraint filtering
+in large-scale security-constrained unit commitment. IEEE Trans Power Syst
+2019;34(3):2457–60.
+[68] Šepetanc K, Pandžić H. Convex polar second-order taylor approximation
+of AC power flows: A unit commitment study. IEEE Trans Power Syst
+2020;36(4):3585–94.
+[69] Yang N, Dong Z, Wu L, Zhang L, Shen X, Chen D, et al. A comprehensive
+review of security-constrained unit commitment. J Mod Power Syst Clean Energy
+2021;10(3):562–76.
+[70] Tang Z, Hill DJ, Liu T. A novel consensus-based economic dispatch for
+microgrids. IEEE Trans Smart Grid 2018;9(4):3920–2.
+[71] Shafie-Khah M, Moghaddam MP, Sheikh-El-Eslami M. Unified solution of a non-
+convex SCUC problem using combination of modified branch-and-bound method
+with quadratic programming. Energy Convers Manage 2011;52(12):3425–32.
+[72] Jiang Q, Zhou B, Zhang M. Parallel augment Lagrangian relaxation method
+for transient stability constrained unit commitment. IEEE Trans Power Syst
+2012;28(2):1140–8.
+[73] Laothumyingyong N, Damrongkulkamjorn P. Security-constrained unit com-
+mitment using mixed-integer programming with benders decomposition. In:
+ECTI-CON2010: the 2010 ECTI international confernce on electrical engi-
+neering/electronics, computer, telecommunications and information technology.
+IEEE; 2010, p. 626–30.
+[74] Yang Y, Wu L. Machine learning approaches to the unit commitment
+problem: Current trends, emerging challenges, and new strategies. Electr J
+2021;34(1):106889.
+Applied Energy 380 (2025) 124793 
+17 
+
+===== PAGE 18 =====
+Y. Zhang et al.
+[75] Yang N, Yang C, Xing C, Ye D, Jia J, Chen D, et al. Deep learning-based
+SCUC decision-making: An intelligent data-driven approach with self-learning
+capabilities. IET Gener Transm Distribution 2022;16(4):629–40.
+[76] Ramesh AV, Li X. Feasibility layer aided machine learning approach for
+day-ahead operations. IEEE Trans Power Syst 2023.
+[77] Ramesh AV, Li X. Spatio-temporal deep learning-assisted reduced security-
+constrained unit commitment. IEEE Trans Power Syst 2023.
+[78] Mohammadi F, Sahraei-Ardakani M, Trakas DN, Hatziargyriou ND. Machine
+learning assisted stochastic unit commitment during hurricanes with predictable
+line outages. IEEE Trans Power Syst 2021;36(6):5131–42.
+[79] Hasan F, Kargarian A. Topology-aware learning assisted branch and ramp
+constraints screening for dynamic economic dispatch. IEEE Trans Power Syst
+2022;37(5):3495–505.
+[80] Ramesh AV, Li X. Machine learning assisted model reduction for security-
+constrained unit commitment. In: 2022 North American power symposium.
+NAPS, IEEE; 2022, p. 1–6.
+[81] Schmitt S, Harjunkoski I, Giuntoli M, Poland J, Feng X. Fast solution of unit
+commitment using machine learning approaches. In: 2022 IEEE 7th international
+energy conference. ENERGYCON, IEEE; 2022, p. 1–6.
+[82] Zhou J, Cui G, Hu S, Zhang Z, Yang C, Liu Z, et al. Graph neural networks: A
+review of methods and applications. AI Open 2020;1:57–81.
+[83] Wu Z, Pan S, Chen F, Long G, Zhang C, Philip SY. A comprehensive survey on
+graph neural networks. IEEE Trans Neural Netw Learn Syst 2020;32(1):4–24.
+[84] Kipf TN, Welling M. Semi-supervised classification with graph convolutional
+networks. In: International conference on learning representations. 2022.
+[85] Sapountzoglou N, Lago J, De Schutter B, Raison B. A generalizable and sensor-
+independent deep learning method for fault detection and location in low-voltage
+distribution grids. Appl Energy 2020;276:115299.
+[86] Benmahamed Y, Teguar M, Boubakeur A. Application of SVM and KNN to
+duval pentagon 1 for transformer oil diagnosis. IEEE Trans Dielectr Electr Insul
+2017;24(6):3443–51.
+[87] Hamilton W, Ying Z, Leskovec J. Inductive representation learning on large
+graphs. Adv Neural Inf Process Syst 2017;30.
+[88] Nauck C, Lindner M, Schürholt K, Hellmann F. Toward dynamic stability
+assessment of power grid topologies using graph neural networks. Chaos
+2023;33(10).
+[89] Ringsquandl M, Sellami H, Hildebrandt M, Beyer D, Henselmeyer S, Weber S, et
+al. Power to the relational inductive bias: Graph neural networks in electrical
+power grids. In: Proceedings of the 30th ACM international conference on
+information & knowledge management. 2021, p. 1538–47.
+[90] Zimmerman RD, Murillo-Sánchez CE, Gan D. MATPOWER: A MATLAB power sys-
+tem simulation package. Vol. 1, Ithaca NY: Manual, Power Systems Engineering
+Research Center; 1997, p. 10–7.
+[91] Fliscounakis S, Panciatici P, Capitanescu F, Wehenkel L. Contingency rank-
+ing with respect to overloads in very large power systems taking into
+account uncertainty, preventive, and corrective actions. IEEE Trans Power Syst
+2013;28(4):4909–17.
+[92] Josz C, Fliscounakis S, Maeght J, Panciatici P. AC power flow data in MAT-
+POWER and QCQP format: iTesla, RTE snapshots, and PEGASE. 2016, arXiv
+preprint arXiv:1603.01533.
+[93] Chatzos M, Tanneau M, Van Hentenryck P. Data-driven time series reconstruction
+for modern power systems research. Electr Power Syst Res 2022;212:108589.
+[94] Gurobi Optimization L. Gurobi optimizer reference manual. 2021.
+[95] Paszke A, Gross S, Massa F, Lerer A, Bradbury J, Chanan G, et al. Pytorch: An
+imperative style, high-performance deep learning library. Adv Neural Inf Process
+Syst 2019;32.
+[96] Fey M, Lenssen JE. Fast graph representation learning with PyTorch Geometric.
+In: ICLR workshop on representation learning on graphs and manifolds. 2019.
+[97] Liaw R, Liang E, Nishihara R, Moritz P, Gonzalez JE, Stoica I. Tune: A research
+platform for distributed model selection and training. 2018, arXiv preprint
+arXiv:1807.05118.
+Applied Energy 380 (2025) 124793 
+18 

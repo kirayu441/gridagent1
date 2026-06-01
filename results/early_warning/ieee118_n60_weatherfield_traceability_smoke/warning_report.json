@@ -1,0 +1,206 @@
+{
+  "module": "GNN Early Warning",
+  "inputs": {
+    "grid": "C:\\Users\\yuhan\\Desktop\\gridagent1\\data_final\\ieee118_n60\\grid_topology.json",
+    "aligned": "C:\\Users\\yuhan\\Desktop\\gridagent1\\data_final\\formal_guangdong_2024\\aligned_merged.csv",
+    "failure_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\component_failure_probability\\ieee118_n60\\line_failure_timeseries_schloemer.csv",
+    "contingency_tensor": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\spatiotemporal_contingency\\ieee118_n60_wangqmc\\contingency_tensor_wang_qmc.npy",
+    "load_priority_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\load_prioritization_scheduling\\formal2024\\load_bus_priority_profile.csv"
+  },
+  "horizon": {
+    "start_index": 0,
+    "end_index_exclusive": 24,
+    "start_timestamp": "2024-09-01 00:00:00",
+    "end_timestamp": "2024-09-01 23:00:00",
+    "hours": 24
+  },
+  "training": {
+    "epochs_requested": 5,
+    "epochs_effective": 5,
+    "best_val_mse": 2.439890295136138e-06,
+    "train_split_count": 50,
+    "val_split_count": 22,
+    "model_variant": "metapath_v1",
+    "optimizer": {
+      "lr": 0.0042,
+      "weight_decay": 5e-05
+    },
+    "train_metrics": {
+      "mae": 0.0015394671128371791,
+      "rmse": 0.0015432922966772634,
+      "brier": 2.3817511129833827e-06
+    },
+    "val_metrics": {
+      "mae": 0.0015598290312201339,
+      "rmse": 0.001562014871630238,
+      "brier": 2.4398904591940294e-06
+    },
+    "history": [
+      {
+        "epoch": 1.0,
+        "train_mse": 0.20238013565540314,
+        "val_mse": 0.029896635562181473
+      },
+      {
+        "epoch": 2.0,
+        "train_mse": 0.030663730576634407,
+        "val_mse": 0.004409419372677803
+      },
+      {
+        "epoch": 3.0,
+        "train_mse": 0.0046890066005289555,
+        "val_mse": 0.0004957379424013197
+      },
+      {
+        "epoch": 4.0,
+        "train_mse": 0.0005539039266295731,
+        "val_mse": 3.972984632127918e-05
+      },
+      {
+        "epoch": 5.0,
+        "train_mse": 4.5827833673683926e-05,
+        "val_mse": 2.439890295136138e-06
+      }
+    ],
+    "metapath_attention_mean": {
+      "share_bus": 0.2807254737450017,
+      "two_hop_topology": 0.2183506168011162,
+      "source_bridge": 0.2473325545175208,
+      "primary_load_bridge": 0.2535913603173362
+    },
+    "metapath_topk": 4,
+    "metapath_gate_mean": 0.796842060983181
+  },
+  "fit_quality": {
+    "train": {
+      "mae": 0.0015394671128371791,
+      "rmse": 0.0015432922966772634,
+      "brier": 2.3817511129833827e-06
+    },
+    "validation": {
+      "mae": 0.0015598290312201339,
+      "rmse": 0.001562014871630238,
+      "brier": 2.4398904591940294e-06
+    }
+  },
+  "node_weather_generation": {
+    "method": "global_timeseries_projected_to_nodes_with_spatial_influence",
+    "time_feature_columns": {
+      "wind_column": "wind_renewables_ninja_wind_electricity",
+      "pv_column": "pv_renewables_ninja_pv_electricity",
+      "load_columns": [
+        "load_load_load_region1",
+        "load_load_load_region2"
+      ],
+      "wind_speed_column": "wind_renewables_ninja_wind_wind_speed",
+      "wind_speed_fallback_zero": false
+    },
+    "coordinate_source_count": {
+      "lat_lon": 60
+    },
+    "factor_formulas": {
+      "wind_factor": "clip(0.65 + 0.75 * influence, 0.35, 1.60), then weighted-normalized by wind_share",
+      "pv_factor": "clip(1.08 - 0.40 * influence, 0.35, 1.35), then weighted-normalized by pv_share",
+      "load_factor": "clip(0.95 + 0.14 * influence, 0.75, 1.35), then weighted-normalized by load_share",
+      "wind_speed_factor": "clip(0.55 + 0.95 * influence, 0.35, 1.70)"
+    },
+    "shares": {
+      "wind_share_sum": 1.0000000000000002,
+      "pv_share_sum": 1.0000000000000002,
+      "load_share_sum": 1.0
+    }
+  },
+  "modeling": {
+    "metapath_v1_enabled": true,
+    "metapath_topk": 4,
+    "run_baseline_comparison": true
+  },
+  "risk_thresholds": {
+    "high": 0.7,
+    "medium": 0.4,
+    "hour_trigger": 0.35
+  },
+  "calibration": {
+    "risk_mean_floor": 0.18,
+    "risk_mean_cap": 0.55,
+    "calibrated_hourly_risk_mean": 0.20052136841327262,
+    "calibrated_hourly_risk_min": 0.0879656767083925,
+    "calibrated_hourly_risk_max": 0.24709888621632137
+  },
+  "scenario_sampling": {
+    "intensity_distribution": "Beta(alpha,beta)",
+    "alpha": 2.0,
+    "beta": 6.0
+  },
+  "mc_scenarios": 200,
+  "outputs": {
+    "line_risk_prediction_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\line_risk_prediction.csv",
+    "nk_failure_risk_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\nk_failure_risk.csv",
+    "critical_load_risk_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\critical_load_risk.csv",
+    "calibrated_hourly_line_probability_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\calibrated_hourly_line_probability.csv",
+    "node_weather_timeseries_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\node_weather_timeseries.csv",
+    "node_weather_horizon_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\node_weather_horizon.csv",
+    "node_weather_summary_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\node_weather_summary.csv",
+    "metapath_attention_summary_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\metapath_attention_summary.csv"
+  },
+  "comparison": {
+    "enabled": true,
+    "comparison_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\model_comparison.csv",
+    "comparison_model_line_risk_prediction_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\baseline_line_risk_prediction.csv",
+    "comparison_model_calibrated_hourly_line_probability_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\early_warning\\ieee118_n60_weatherfield_traceability_smoke\\baseline_calibrated_hourly_line_probability.csv",
+    "comparison_model_training": {
+      "epochs_requested": 5,
+      "epochs_effective": 5,
+      "best_val_mse": 1.6851114196470007e-05,
+      "train_split_count": 50,
+      "val_split_count": 22,
+      "model_variant": "baseline_gnn",
+      "optimizer": {
+        "lr": 0.006,
+        "weight_decay": 0.0001
+      },
+      "train_metrics": {
+        "mae": 0.0041263582171892285,
+        "rmse": 0.004128013264698785,
+        "brier": 1.7040493513529125e-05
+      },
+      "val_metrics": {
+        "mae": 0.004103398540117327,
+        "rmse": 0.0041050108440454595,
+        "brier": 1.6851114029730813e-05
+      },
+      "history": [
+        {
+          "epoch": 1.0,
+          "train_mse": 0.25902101397514343,
+          "val_mse": 0.03904351964592934
+        },
+        {
+          "epoch": 2.0,
+          "train_mse": 0.03993377089500427,
+          "val_mse": 0.0034653209149837494
+        },
+        {
+          "epoch": 3.0,
+          "train_mse": 0.0038304985500872135,
+          "val_mse": 0.00043126774835400283
+        },
+        {
+          "epoch": 4.0,
+          "train_mse": 0.0005239965976215899,
+          "val_mse": 7.494966848753393e-05
+        },
+        {
+          "epoch": 5.0,
+          "train_mse": 0.00010066147660836577,
+          "val_mse": 1.6851114196470007e-05
+        }
+      ]
+    },
+    "winner_by_metric": {
+      "val_mae": "metapath_v1",
+      "horizon_mae": "metapath_v1",
+      "best_val_mse": "metapath_v1"
+    }
+  }
+}

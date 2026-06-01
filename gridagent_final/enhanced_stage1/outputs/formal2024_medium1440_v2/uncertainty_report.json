@@ -1,0 +1,64 @@
+{
+  "dataset": "formal2024_medium1440_v2",
+  "method": "Conditional Rolling DPGMM + KMeans(nearest-to-centroid representative)",
+  "input": {
+    "dpgmm_input": "D:\\gridagent1\\gridagent_final\\enhanced_stage1\\inputs\\DPGMM_input.guangdong2024.csv",
+    "trim_input": "D:\\gridagent1\\gridagent_final\\enhanced_stage1\\inputs\\TRIM_input.guangdong2024.csv"
+  },
+  "series_metadata": {
+    "wind_columns": [
+      "wind_renewables_ninja_wind_electricity"
+    ],
+    "pv_columns": [
+      "pv_renewables_ninja_pv_electricity"
+    ],
+    "original_rows": 8784,
+    "used_rows": 1440,
+    "start": "2024-01-01 00:00:00",
+    "end": "2024-02-29 23:00:00"
+  },
+  "model_params": {
+    "window_radius": 24,
+    "max_components": 8,
+    "max_iter": 150,
+    "shared_block_hours": 1,
+    "seed": 42,
+    "n_sampled_scenarios": 60,
+    "n_typical_scenarios": 10,
+    "covariance_reg": 1e-06,
+    "transition_dimension": 4,
+    "normalization": "per-variable max scaling from historical series",
+    "initialization": "sample first hour from first local window",
+    "pv_night_rule": "set PV to 0 using month-hour daylight mask derived from historical PV quantiles",
+    "representative_scenario_rule": "nearest-to-centroid sampled trajectory"
+  },
+  "metrics": {
+    "history": {
+      "wind_mean": 0.23529517483321832,
+      "wind_std": 0.22113985924548066,
+      "pv_mean": 0.20358392213909668,
+      "pv_std": 0.2907139881360445,
+      "wind_pv_corr": -0.18295664029798858,
+      "wind_ramp_std": 0.05410596358263273,
+      "pv_ramp_std": 0.10571431279878772
+    },
+    "sampled": {
+      "wind_mean": 0.235523577711515,
+      "wind_std": 0.20443173949355078,
+      "pv_mean": 0.1035648315567428,
+      "pv_std": 0.20035458886789573,
+      "wind_pv_corr": -0.09635288556675108,
+      "wind_90pct_coverage": 0.8347222222222223,
+      "pv_90pct_coverage": 0.9013888888888889,
+      "wind_ramp_std": 0.047349717416294027,
+      "pv_ramp_std": 0.1121541280671675
+    },
+    "typical_weighted": {
+      "scenario_count": 10,
+      "wind_mean": 0.2362689053965944,
+      "wind_std": 0.20562465844405356,
+      "pv_mean": 0.09567160245945205,
+      "pv_std": 0.18724573432094532
+    }
+  }
+}

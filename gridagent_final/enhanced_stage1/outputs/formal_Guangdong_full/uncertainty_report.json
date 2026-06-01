@@ -1,0 +1,63 @@
+{
+  "dataset": "formal_Guangdong_full",
+  "method": "Conditional Rolling DPGMM + KMeans",
+  "input": {
+    "dpgmm_input": "D:\\gridagent1\\gridagent_final\\enhanced_stage1\\inputs\\DPGMM_input.guangdong2024.csv",
+    "trim_input": "D:\\gridagent1\\gridagent_final\\enhanced_stage1\\inputs\\TRIM_input.guangdong2024.csv"
+  },
+  "series_metadata": {
+    "wind_columns": [
+      "wind_renewables_ninja_wind_electricity"
+    ],
+    "pv_columns": [
+      "pv_renewables_ninja_pv_electricity"
+    ],
+    "original_rows": 8784,
+    "used_rows": 8784,
+    "start": "2024-01-01 00:00:00",
+    "end": "2024-12-31 23:00:00"
+  },
+  "model_params": {
+    "window_radius": 24,
+    "max_components": 8,
+    "max_iter": 150,
+    "shared_block_hours": 1,
+    "seed": 42,
+    "n_sampled_scenarios": 200,
+    "n_typical_scenarios": 10,
+    "covariance_reg": 1e-06,
+    "transition_dimension": 4,
+    "normalization": "per-variable max scaling from historical series",
+    "initialization": "sample first hour from first local window",
+    "pv_night_rule": "set PV to 0 when historical timestamp is night/non-PV hour"
+  },
+  "metrics": {
+    "history": {
+      "wind_mean": 0.21991789608058315,
+      "wind_std": 0.2115044899317087,
+      "pv_mean": 0.20253612326197257,
+      "pv_std": 0.2781895120392714,
+      "wind_pv_corr": -0.08794313994274672,
+      "wind_ramp_std": 0.04586760623571332,
+      "pv_ramp_std": 0.09695766490730166
+    },
+    "sampled": {
+      "wind_mean": 0.2231689369855413,
+      "wind_std": 0.2001147851970896,
+      "pv_mean": 0.1100068368931468,
+      "pv_std": 0.20050398113266113,
+      "wind_pv_corr": -0.06721125291135084,
+      "wind_90pct_coverage": 0.8810336976320583,
+      "pv_90pct_coverage": 0.9192850637522769,
+      "wind_ramp_std": 0.040140697570277065,
+      "pv_ramp_std": 0.10922864239103439
+    },
+    "typical_weighted": {
+      "scenario_count": 10,
+      "wind_mean": 0.22316893698554133,
+      "wind_std": 0.16376672010661525,
+      "pv_mean": 0.1100068368931468,
+      "pv_std": 0.12443046686420041
+    }
+  }
+}

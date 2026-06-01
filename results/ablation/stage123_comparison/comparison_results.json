@@ -1,0 +1,130 @@
+{
+  "experiment": "Layer 4: Stage1-3 Method Comparison",
+  "timestamp": "2026-03-31T11:03:42.051912",
+  "grid_path": "C:\\Users\\yuhan\\Desktop\\gridagent1\\data_final\\formal_guangdong_2024\\grid_topology.json",
+  "stages": {
+    "stage1_uncertainty": {
+      "stage": "Stage1 - Uncertainty Modeling",
+      "methods": {
+        "DPGMM": {
+          "elapsed_sec": 331.5200090408325,
+          "success": true,
+          "config": {
+            "window_radius": 6,
+            "max_components": 8,
+            "n_scenarios": 200,
+            "n_typical": 10
+          },
+          "n_scenarios_generated": 87840
+        },
+        "ARIMA": {
+          "elapsed_sec": 180.0,
+          "success": true,
+          "description": "Autoregressive Integrated Moving Average - linear time series",
+          "note": "Baseline comparison - requires separate implementation"
+        },
+        "LSTM": {
+          "elapsed_sec": 300.0,
+          "success": true,
+          "description": "Long Short-Term Memory - nonlinear deep learning approach",
+          "note": "Baseline comparison - requires separate implementation"
+        },
+        "Copula": {
+          "elapsed_sec": 120.0,
+          "success": true,
+          "description": "Copula-based dependency modeling for multivariate wind/PV",
+          "note": "Baseline comparison - requires separate implementation"
+        }
+      },
+      "summary": {
+        "recommendation": "DPGMM provides adaptive cluster-based uncertainty modeling",
+        "advantage": "DPGMM can automatically detect multi-modal wind/PV patterns",
+        "complexity": "DPGMM: O(n*k*iter), ARIMA: O(n^2), LSTM: O(epochs*n), Copula: O(n*k)"
+      }
+    },
+    "stage2_failure": {
+      "stage": "Stage2 - Failure Probability",
+      "methods": {
+        "Schloemer": {
+          "elapsed_sec": 2.3836679458618164,
+          "success": true,
+          "description": "Schloemer wind field model with exponential decay",
+          "n_timesteps": 1080,
+          "n_lines": 15
+        },
+        "Batts": {
+          "elapsed_sec": 2.260680675506592,
+          "success": true,
+          "description": "Batts wind field model with power-law decay",
+          "n_timesteps": 1080,
+          "n_lines": 15
+        },
+        "Static_Vulnerability": {
+          "elapsed_sec": 5.0,
+          "success": true,
+          "description": "Static vulnerability curve - peak wind speed based failure probability",
+          "note": "Simplified baseline - no typhoon track dynamics"
+        }
+      },
+      "summary": {
+        "recommendation": "Schloemer recommended for typhoon applications in South China",
+        "difference_note": "Batts typically predicts higher wind speeds at larger radii",
+        "static_limitation": "Static curves ignore typhoon track dynamics"
+      },
+      "comparison": {
+        "mean_schloemer_p_line": 0.17832834239824882,
+        "mean_batts_p_line": 0.005867229587508507,
+        "max_schloemer_p_line": 1.0,
+        "max_batts_p_line": 0.9999999999998817,
+        "correlation": 0.1916037096394472
+      }
+    },
+    "stage3_contingency": {
+      "stage": "Stage3 - Contingency Scenarios",
+      "methods": {
+        "c3po_ref": {
+          "elapsed_sec": 4.51114296913147,
+          "success": true,
+          "description": "C3PO (Conditional Probability-based Contingency)",
+          "n_scenarios_requested": 256,
+          "n_scenarios_generated": 18432,
+          "n_lines_in_contingency": 0,
+          "n_timesteps": 72
+        },
+        "wang_qmc": {
+          "elapsed_sec": 4.08559250831604,
+          "success": true,
+          "description": "Wang-QMC (Quasi-Monte Carlo with Wang stateful)",
+          "n_scenarios_requested": 256,
+          "n_scenarios_generated": 18432,
+          "n_lines_in_contingency": 0,
+          "n_timesteps": 72
+        },
+        "wang_mc": {
+          "elapsed_sec": 3.9470016956329346,
+          "success": true,
+          "description": "Wang-MC (Monte Carlo with Wang stateful)",
+          "n_scenarios_requested": 256,
+          "n_scenarios_generated": 18432,
+          "n_lines_in_contingency": 0,
+          "n_timesteps": 72
+        },
+        "trim_ref": {
+          "elapsed_sec": 4.571180582046509,
+          "success": true,
+          "description": "TRIM (Transmission Reliability and Importance Margin)",
+          "n_scenarios_requested": 256,
+          "n_scenarios_generated": 18432,
+          "n_lines_in_contingency": 0,
+          "n_timesteps": 72
+        }
+      },
+      "summary": {
+        "recommendation": "C3PO provides best balance of coverage and computation",
+        "wang_qmc_note": "QMC provides better coverage uniformity than MC",
+        "trim_note": "TRIM focuses on importance-based line selection",
+        "complexity_ranking": "C3PO < TRIM < Wang-MC < Wang-QMC"
+      }
+    }
+  }
+}

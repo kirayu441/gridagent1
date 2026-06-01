@@ -1,0 +1,578 @@
+
+===== PAGE 5 =====
+15104 IEEE TRANSACTIONS ON INTELLIGENT TRANSPORTATION SYSTEMS, VOL. 26, NO. 10, OCTOBER 2025
+Fig. 5. The H2DGL architecture consists of four main components: 1) Heterogeneous Node Representation for Micro Graph. 2) Heterogeneous Node
+Representation for Macro Graph. 3) Dynamic Graph Encoding. 4) Spatio-Temporal Joint Forecasting Module. In the data preprocessing, micro graphs are
+constructed based on the relationships among warehouses, sorting centers, and delivery stations in each snapshot, while macro graphs are constructed based
+on the relationships between cities and delivery stations.
+Fig. 6. Node representation for micro graph, including metapath adaptive
+generation, metapath aggregation, metapath selection, and multi-view fusion.
+of each snapshot Gm
+tn . The metrics κ and λ describe the
+local and global structural characteristics of nodes in Gm
+tn ,
+respectively. To calculate the average clustering coefficient κ,
+which provides insight into how interconnected a node’s neigh-
+bors are and reflects the local density of connections within
+the neighborhood, we consider all nodes within the same city
+as the target node to be its neighbors in the snapshot Gm
+t .
+For example, for warehouse nodes, the average clustering
+coefficient κw is computed as follows:
+κw = 1
+|Vmw |
+∑
+v∈Vmw
+2|rv|
+|kv| · (|kv| − 1) (2)
+where Vm
+w represents the set of warehouse nodes, |Vm
+w | is
+the total number of warehouse nodes, |kv| is the number
+of neighborhoods for node v, |rv| is the number of edges
+among the neighbors of v, and |kv|·(|kv|−1)
+2 edges that could
+exist among the nodes within the neighborhood. As shown
+in Figure 7, |kv| represents the number of warehouses and
+sorting centers in the same city as node v, while |rv| denotes
+the number of edges among the neighboring nodes of v.
+For global characteristics, we introduce average betweenness
+centrality to describe the node’s importance in global structure.
+Similarly, for warehouse node set Vm
+w , its average betweenness
+centrality λw is:
+λw = 1
+|Vmw |
+∑
+v∈Vmw
+∑
+a̸=v̸=b
+σab (v)
+σab
+(3)
+Fig. 7. Illustration of average clustering coefficient calculation.
+where σab is the total number of shortest paths from node a
+to node b and σab (v) is the number of those paths that pass
+through v (not where v is an end point).
+To balance local and global factors, we compute the maxi-
+mum length of the warehouse nodes’ metapath as follow:
+lw = max
+{
+⌈
+√
+κw · λw · lavg⌉, lmin
+}
+(4)
+where lmin = 3 is the minimum metapath length, and lavg is
+the average shortest path length across all nodes in the each
+snapshot:
+lavg = 1
+N
+∑
+v∈Vm
+1
+|Vm| − 1
+∑
+u∈Vm ,u̸=v
+d(v, u) (5)
+where N is the total number of nodes in snapshot Gm
+t , and
+d(v, u) is the shortest path length between nodes v and u.
+Moreover, we need to capture two types of semantics
+in real logistics supply networks. The first is the seman-
+tics of interactions between heterogeneous nodes involved
+in supply operations. Usually, packages are directed from
+warehouses to sorting centers and then to delivery stations,
+which means that the interactions between heterogeneous
+nodes are typically unidirectional. This type of interaction can
+be easily captured through graph convolution operations [15].
+The second type involves the complex higher-order semantics
+among homogeneous nodes. Specifically, the influence among
+nodes is primarily focused on homogeneous nodes [16]. For
+example, the closure of one warehouse can lead to the opening
+Authorized licensed use limited to: Southeast University. Downloaded on December 21,2025 at 04:14:04 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 6 =====
+XIA et al.: H2DGL: ADAPTIVE METAPATH-BASED DYNAMIC GRAPH LEARNING FOR SUPPLY FORECASTING 15105
+Fig. 8. Random walks are executed to generate metapaths for warehouse,
+sorting center, and delivery station nodes. For each type of node, the top-k
+metapaths with the highest frequency of occurrence are then selected.
+or increased supply of nearby warehouses, and anomalies
+in a sorting center can affect neighboring centers. Utilizing
+symmetric metapaths, where the start and end nodes of a meta-
+path are of the same type, proves to be an effective method
+for modeling these higher-order relationships.
+By constraining the length of the metapath using lw, we can
+focus on both locally and globally relevant structural features
+within the graph, thereby avoiding noise and unnecessary
+computational overhead. Subsequently, as shown in Figure 8,
+we perform ϕ random walk [17], recording the frequency of
+each element within the metapath set P = { P1, · · · , Pϕ},
+and select the top-k most frequent metapaths as the optimal
+metapaths for warehouse-type nodes, denoted as set Pw.
+Similarly, we obtain the metapath sets Ps and Pd for sort-
+ing centers and delivery stations through adaptive random
+walks.
+2) Metapath Aggregation Block: For a given metapath P ∈
+P = {Pw, Ps, Pd } and a target node v, this module first gath-
+ers detailed routing information by sampling metapath-specific
+neighbors u ∈ N P
+v of node v. It then encodes the matching
+instances P(v, u), which represent the metapath instance con-
+necting the target node v with the neighboring node u along
+metapath P. The encoding of these metapath instances P(v, u)
+is expressed as:
+hP(v,u) = WP ·
+
+ 1
+|P(v, u)|
+∑
+i∈P(v,u)
+hi
+
+ (6)
+where initial feature vector hi ∈ Rd of node vi in the metapath
+matching instances P(v, u) is randomly initialized, and WP
+is the trainable weight matrix specific to the metapath. The
+encoder applies a linear transformation to the element-wise
+mean of the node vectors along the metapath instance P(v, u).
+Considering that different metapath instances have various
+impacts on the target node, we utilize a multi-head attention
+mechanism [18] to compute the weighted sum of all meta-
+path instances related to the target node v and to learn the
+normalized importance hP
+v of each metapath P:
+hP
+v = σ
+(
+MultiHeadAttention
+(
+hv, hP(v,u)
+))
+(7)
+where hv ∈ Rd is the initial feature vector of node v
+in micro graphs, σ (·) denotes the activation function.
+Ultimately, we derive metapath-specific node representations
+for the target node v based on k metapaths, represented
+as {hP1
+v , hP2
+v , . . . ,hPk
+v }. Each hPi
+v ∈ Rd captures the spatial
+information of node vi according to metapath Pi.
+3) Metapath Selection Block: We introduce the metapath
+selection module, which uses the graph attention mecha-
+nism [18] to identify distinct semantic information in each
+metapath and ultimately determine an effective set of meta-
+paths. For each node type τ ∈ {w, s, d}, there is a set of
+latent vectors {hPi
+1 , hPi
+2 , . . . ,hPi
+|Vmτ |} for all nodes in Vm
+τ based
+on metapath Pi. The average of the metapath-specific node
+vectors hPi is computed as:
+hPi = 1
+|Vmτ |
+∑
+v∈V mτ
+tanh(Wτ · hPi
+v + bτ ) (8)
+where Wτ ∈ Rdl ×d and bτ ∈ Rdl are trainable parameters.
+and dl is the number of metapaths for node type τ. We con-
+solidate the metapath-specific vectors of node v using a graph
+attention mechanism:
+βPi = exp(q⊤
+τ · hPi )∑
+P∈Pτ exp(q⊤τ · hPi ) (9)
+hPτ
+v =
+∑
+P∈Pτ
+βP · hP
+v (10)
+where qτ ∈ Rdl is a learnable vector used for the linear trans-
+formation of node type τ. βPi indicates the relative importance
+of metapath Pi for all nodes of type τ. Finally, we perform a
+weighted summation of all metapath-specific node vectors for
+node v, yielding the spatial routing representation of node v
+across all metapaths as follows:
+hr
+v = σ (Wr · hPτ
+v ) (11)
+where hr
+v is the feature vector for route view, σ (·) is the acti-
+vation function, and Wr ∈ R|Vm |×dl represents the trainable
+weight matrix.
+4) Multi-View Fusion Block: To capture the underlying
+associations between events and routes, we design a multi-
+view fusion block that considers both dynamic route and event
+impacts. This module combines the event feature with the
+route view to form the event view and employs a two-layer
+attention mechanism to extract spatial features from the event
+view. Given the heterogeneity of node attributes and event
+information, different node types have varying attribute dimen-
+sions and exist in distinct feature spaces. The attribute sets for
+warehouses, sorting centers and delivery stations are:
+• Attr w = [cities, event attributes]
+• Attr s = [event attributes]
+• Attr d = [road sections, event attributes]
+We perform a type-specific linear transformation for each
+type τ in T m. For a node v belonging to Vm
+τ of type τ,
+we calculate h′
+v as follows:
+h′
+v = Wτ · hτ
+v (12)
+where hτ
+v ∈ Rdτ is the one-hot encoded feature vector of
+node v of type τ using event attributes, and h′
+v ∈ Rd is the
+transformed latent vector, Wτ ∈ Rd×dτ is the parameterized
+weight matrix for nodes of type τ. This transformation ensures
+consistent dimensions across diverse event features, addressing
+node heterogeneity.
+By injecting the event sequence Xe = {X e,t1, · · · , Xe,tn }
+into the learned route graph Gm,r to construct the event-view
+Authorized licensed use limited to: Southeast University. Downloaded on December 21,2025 at 04:14:04 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 7 =====
+15106 IEEE TRANSACTIONS ON INTELLIGENT TRANSPORTATION SYSTEMS, VOL. 26, NO. 10, OCTOBER 2025
+graph GXe (detailed in Def.4), where we utilize representative
+event features that significantly impact three types of nodes:
+warehouses, sorting centers, and delivery stations. For exam-
+ple, during heavy rain, we select the amount of rainfall as
+the event feature. For specific selections of event features,
+please refer to Table I. The spatial event representations he
+v
+for each node are calculated by the graph learning layer as
+follows:
+he
+v =
+∑
+u∈Nm (v)
+exp
+(
+a⊤
+mσ
+(
+Wm
+a [h′
+v∥h′
+u∥Xe]
+))
+· Wm
+e h′
+u
+∑
+k∈Nm (v) exp
+(
+a⊤mσ
+(
+Wma [h′
+v∥h′
+k∥Xe]
+)) (13)
+where ∥ is the concatenation operation, Xe is the feature vector
+obtained by encoding the event sequence Xe with the RNN,
+Nm(v) is the set of neighbor nodes of node v in Gm,r , Wm
+a
+and am are learnable weight matrices, and Wm
+e is the neighbor
+feature transformation matrix. Finally, we combine hr
+v and he
+v
+from the route view and event view to derive the spatial
+representation:
+hm
+τ = MLP
+(
+hr
+τ || he
+τ
+)
+(14)
+In summary, the graph convolution layer aggregates the
+features from neighboring nodes, weighted by the atten-
+tion mechanism, to capture the spatial interactions between
+nodes. This fusion block effectively integrates both route
+and event information to provide comprehensive spatial
+representations.
+B. Heterogeneous Node Representation for Macro Graph
+In real logistics systems, each city contains several ware-
+houses, demonstrating a hierarchical relationship between
+warehouses and cities. We introduce LightGCN [19] to effec-
+tively learn the hierarchical relations between cities and
+delivery stations, where each city is an aggregated cluster of a
+set of warehouses. In other words, the supply volume of each
+city is the sum of the supply volumes of all the warehouses
+within that city. Given the macro graph G M, inspired by [20],
+we introduce an information propagation mechanism within
+the macro graph to extract the interactions between cities and
+delivery stations. The propagation process is formalized as
+follows:
+hk
+c =
+∑
+d∈Nc
+1
+√|Nc||Nd |hk−1
+d , hk
+d =
+∑
+c∈Nd
+1√|Nd ||Nc|hk−1
+c
+(15)
+where hk
+c, hk
+d ∈ Rd contain the aggregation information at the
+k-th layer for city node vM
+c and delivery station node vM
+d in
+macro graph. h0
+c and h0
+d are randomly initialized. Nc and Nd
+are the neighboring nodes of the city and delivery station in
+the macro graph G M. Then, we add the node representations
+from K layers to integrate information from various depths
+of neighboring nodes. The output for macro nodes is repre-
+sented as:
+hM
+c =
+K∑
+k=0
+hk
+c, hM
+d =
+K∑
+k=0
+hk
+d (16)
+Hence, we learn the distinctive spatial correlation of nodes
+at the macro level.
+C. Dynamic Graph Encoding
+In the previous discussion, the extraction of node features,
+whether for macro or micro graphs, is confined to a specific
+snapshot. However, in dynamic graphs, sequences closer to
+the current time tn more accurately reflect the nodes’ current
+states. Thus, we apply an exponential decay method [21]
+to dynamically update the weights of node features across
+different snapshots. For a snapshot arriving at time tk, its
+weight at the current time tn is calculated as:
+w(tk, tn) = exp(−γ (tn − tk)) (17)
+Here, γ = 0.5 is a hyperparameter controlling the decay rate.
+Given the dynamic micro graphs Gm = {G m
+t0 , · · · , Gm
+tn }, the
+node features corresponding to each snapshot are represented
+as {hm
+τ (t0), · · · , hm
+τ (tn)}, where τ ∈ {w, s, d}. We perform a
+weighted update of node features from all snapshots between
+tk and tn, resulting in the updated node features:
+ˆhm
+τ =
+tn∑
+t=tk
+w(t , tn)hm
+τ (t) (18)
+where ˆhm
+τ (t) represent the node features at snapshot t for
+micro graphs, and macro graphs update node features in
+the similar process. Therefore, using Eq. (17) and Eq. (18),
+the final spatial representations for the nodes in the micro
+graph, specifically for warehouses, sorting centers, and deliv-
+ery stations, are denoted as ˆhm
+w, ˆhm
+s , and ˆhm
+d , respectively.
+For the macro graph, the final spatial representations for the
+nodes representing cities and delivery stations are denoted
+as ˆhM
+c and ˆhM
+d , respectively.
+D. Spatio-Temporal Joint Forecasting Module
+In this section, we propose Spatio-Temporal Joint Forecast-
+ing Module, which consists of two components: 1) time-series
+encoder and 2) spatio-temporal fusion.
+1) Time-Series Encoder: To learn complex temporal depen-
+dencies, we introduce the Gated TCN block [22], which
+contains a 1-D causal convolution followed by gated lin-
+ear units (GLU) as a non-linearity. For all warehouses and
+delivery stations, the gated temporal convolution can be
+defined as:
+fT C N(X ) = φ(21 ⋆ X + b) ⊙ σ (22 ⋆ X + c) (19)
+where 21, 22, b and c are learnable parameters, ⋆ denotes
+1-D convolution operation, ⊙ represents the element-
+wise Hadamard product. φ(·) denotes the tangent hyper-
+bolic activation function, and σ (·) represents the sigmoid
+function.
+2) Spatio-Temporal Fusion: As shown in Figure 9,
+it consists of two spatio-temporal fusion blocks utilizing
+multi-layer temporal convolutions to capture temporal corre-
+lations and performing fusion between spatial and temporal
+features, one for warehouses and the other for delivery
+stations.
+Before passing the spatial features to the spatio-temporal
+feature fusion block, we must fuse the hierarchical spa-
+tial representations for warehouses and delivery stations.
+Authorized licensed use limited to: Southeast University. Downloaded on December 21,2025 at 04:14:04 UTC from IEEE Xplore.  Restrictions apply. 
+
+
+===== PAGE 8 =====
+XIA et al.: H2DGL: ADAPTIVE METAPATH-BASED DYNAMIC GRAPH LEARNING FOR SUPPLY FORECASTING 15107
+Fig. 9. The spatio-temporal fusion block.
+Due to the semantic differences between the micro graph
+and the macro graph, the first step involves mapping the
+macro nodes in G M to the semantic space of the micro nodes
+in Gm, i.e.,
+ˆhM
+w = ˆhM
+c · Mcw (20)
+where Mcw ∈ Rdc×dw is the mapping matrix transforming city
+nodes back to warehouse nodes. This operation ensures that
+cross-level features can be compared within a unified semantic
+space, avoiding semantic misalignment issues that may arise
+during direct fusion. Since the forms of delivery stations are
+consistent in both G M and Gm, there is no need to conduct the
+node mapping for delivery stations. Then, we fuse the spatial
+representations for each node between the micro graph Gm and
+the macro graph G M to obtain the final spatial representation
+for warehouse and delivery stations, respectively. To prevent
+the information from becoming overly smooth due to a simple
+weighted summation. Specifically, we introduce a hierarchical
+gating mechanism to control the amount of spatial information
+flowing from the macro level to the micro level. The detailed
+calculation is as follows:
+gw = sigmoid([ ˆhm
+w || ˆhM
+w ] · Ww + bw) (21)
+where gw ∈ Rdw×d is the gating matrix for warehouses.
+Ww, bw ∈ Rd×d are parameters to learn. Here, the sigmoid
+function constrains the gating values within the interval [0, 1],
+allowing the model to selectively integrate macro information
+at the node level. Subsequently, we perform a hierarchical
+fusion to integrate the spatial representations of micro and
+macro nodes into a unified embedding vector for each node
+type:
+ˆhw = ˆhm
+w + gw ⊙ ˆhM
+w (22)
+where ˆhw ∈ Rdw×d is the spatial representation for ware-
+houses. Similar to Eq. (21) and Eq. (22), the spatial
+representation ˆhd for each delivery station v ∈ Vm
+T m
+d
+can
+also been computed. To preserve the high purity of temporal
+features during the spatio-temporal feature fusion process, the
+spatial features are only propagated to one of the Gated TCN
+blocks, while the other Gated TCN block focuses solely on
+temporal modeling. Residual connections and skip connections
+are also introduced to avoid the gradient vanishing problem
+and maintain sequence length consistency. The output layer
+consists of two liner layers, which transform the channel
+dimension to the desired output dimension. After that, we set
+the number of output channels of the last layer as T to get
+the desired output dimension, i.e.,
+ˆyT +t
+i = σ (Wi,2(σ (Wi,1 ˆhi + bi,1)) + bi,2), i ∈ {w, d} (23)
+where ˆyT +t
+w and ˆyT +t
+d are predicted values for the warehouse
+and delivery station, respectively. Wi,1 and Wi,2 are the
+learnable parameter matrices, and bi,1 and bi,2 are the biases.
+3) Loss Function: We use the Mean Absolute Error (MAE)
+as the objective function for the supply forecasting task:
+Lmae = 1
+T ′
+1
+|Vmw |
+T ′
+∑
+t=1
+∑
+i∈Vmw
+|yT +t
+i − ˆyT +t
+i |
++ 1
+T ′
+1
+|Vm
+d |
+T ′
+∑
+t=1
+∑
+i∈Vm
+d
+|yT +t
+i − ˆyT +t
+i | (24)
+where yT +t
+i , ˆyT +t
+i denote real value and predicted value.
+Vm
+w and Vm
+d denote the node set of warehouses and delivery
+stations, respectively. T ′ denotes the target future step.
+4) Complexity Analysis: Let |Vm| be the number of nodes
+in the micro graph Gm, and |V M | in the macro graph G M.
+In Sec. III-A, the metapath adaptive generation module is
+preprocessed, avoiding recalculation during training. Thus,
+the time complexity is (|Vm|l pd K + E Pd K), where K is the
+number of attention heads, l p is the metapath length, d is
+the hidden layer dimension, and E P is the number of aggre-
+gated node pairs, with space complexity (|V m|dl K + E P K d).
+In Sec. III-B, the time complexity is (2|V M
+c |d + 2|V M
+d |d),
+where |V M
+c | and |V M
+d | are the counts of city and distribution
+station nodes, respectively, with space complexity (|V M
+c | +
+|V M
+d |)d. For Sec. III-C, the time complexity is (|V M
+c |+|V M
+d |+
+|V M
+w |)d(tk − tn), where tk − tn is the dynamic graph length
+and |V M
+w | is the number of warehouse nodes, leading to space
+complexity (|V M
+c | + |VM
+d | + |VM
+w |)(tk − tn)d. In Sec. III-D, the
+time complexity is (|Vm|d + |V M |d) with space complexity
+(|Vm| + |VM |)d2. Given |Vm| ≫ |V M | ≫ d > E P, the overall
+time complexity is O(|Vm|d + |V M |d), and space complexity
+is O(|Vm|d2 + |V M |d2).
+IV. O FFLINE EXPERIMENTS
+In this section, we conduct offline experiments on real-world
+datasets from two cities provided by JD Logistics to evaluate
+the performance of our proposed H2DGL framework for emer-
+gency supply forecasting.
+A. Datasets
+We collect supply data from the JD Logistics platform for
+the delivery destinations of Beijing (BJ) and Shanghai (SH),
+covering the period from January 1, 2022, to August 1, 2022
+(a total of 212 days). In our experiments, we consider three
+types of events occurring during the different periods as the
+logistics supply data, namely the pandemic, heavy rain, and
+promotion, to analyze how different types of events affect
+supply capabilities within the IWDSN. Based on the type of
+event, the collected data is divided into three separate datasets,
+named according to the destination of the supply tasks, i.e.,
+Beijing and Shanghai. In each dataset, the warehouses and
+sorting centers are from all over the country. The statistics of
+the datasets and the event attributes used are shown in Table I,
+where Lockdown Status and Categories are represented using
+one-hot encoding, while the other attributes are presented as
+standardized numerical sequences.
+Authorized licensed use limited to: Southeast University. Downloaded on December 21,2025 at 04:14:04 UTC from IEEE Xplore.  Restrictions apply. 

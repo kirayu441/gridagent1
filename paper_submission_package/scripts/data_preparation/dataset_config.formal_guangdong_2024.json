@@ -1,0 +1,62 @@
+{
+  "region": "guangdong_2024",
+  "timezone": "Asia/Shanghai",
+  "start": "2024-01-01 00:00:00",
+  "end": "2024-12-31 23:00:00",
+  "freq": "1h",
+  "raw_dirs": {
+    "wind_solar": "data_raw/formal_guangdong_2024/wind_solar",
+    "load": "data_raw/formal_guangdong_2024/load",
+    "weather": "data_raw/formal_guangdong_2024/weather",
+    "grid": "data_raw/formal_guangdong_2024/grid"
+  },
+  "processed_dir": "data_processed/formal_guangdong_2024",
+  "final_dir": "data_final/formal_guangdong_2024",
+  "renewables_ninja": {
+    "enabled": true,
+    "api_token": "${RENEWABLES_NINJA_TOKEN}",
+    "base_url": "https://www.renewables.ninja/api/data",
+    "wind_params": {
+      "lat": 23.1291,
+      "lon": 113.2644,
+      "date_from": "2024-01-01",
+      "date_to": "2024-12-31",
+      "capacity": 1.0,
+      "height": 100,
+      "turbine": "Vestas V80 2000",
+      "format": "json",
+      "raw": "true"
+    },
+    "pv_params": {
+      "lat": 23.1291,
+      "lon": 113.2644,
+      "date_from": "2024-01-01",
+      "date_to": "2024-12-31",
+      "capacity": 1.0,
+      "system_loss": 0.1,
+      "tracking": 0,
+      "tilt": 20,
+      "azim": 180,
+      "format": "json",
+      "raw": "true"
+    }
+  },
+  "manual_downloads": [
+    {
+      "url": "https://www.renewables.ninja/downloads",
+      "output": "data_raw/formal_guangdong_2024/wind_solar/renewables_ninja_download_page.html"
+    },
+    {
+      "url": "https://figshare.com/articles/dataset/SDWPF_Spatial_Dynamic_Wind_Power_Forecasting_Dataset",
+      "output": "data_raw/formal_guangdong_2024/wind_solar/sdwpf_dataset_page.html"
+    },
+    {
+      "url": "https://data.openei.org/search?q=electricity+load",
+      "output": "data_raw/formal_guangdong_2024/load/openei_load_search_page.html"
+    },
+    {
+      "url": "https://data.openei.org/search?q=power+grid",
+      "output": "data_raw/formal_guangdong_2024/grid/openei_grid_search_page.html"
+    }
+  ]
+}

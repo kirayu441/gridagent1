@@ -1,0 +1,93 @@
+{
+  "module": "Dispatch Optimization",
+  "objective": "min generation + reserve + startup/shutdown + load shedding penalty",
+  "inputs": {
+    "grid": "C:\\Users\\yuhan\\Desktop\\gridagent1\\data_final\\ieee118_n60\\grid_topology.json",
+    "trim_input": "C:\\Users\\yuhan\\Desktop\\gridagent1\\data_final\\formal_guangdong_2024\\TRIM_input.csv",
+    "failure_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage2_failure\\schloemer\\line_failure_timeseries_schloemer.csv",
+    "uncertainty_dir": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage1_wind_pv\\formal2024",
+    "line_risk_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage6_warning\\line_risk_prediction.csv",
+    "time_horizon": {
+      "start": "2024-09-02 00:00:00",
+      "end": "2024-09-02 23:00:00",
+      "hours": 24
+    },
+    "stochastic_scenarios": 6,
+    "robust_set_size": 5
+  },
+  "solver": {
+    "time_limit_sec": 120.0,
+    "mip_gap": 0.02,
+    "seed": 42
+  },
+  "strategy_mode": "contextual",
+  "strategy_rules": {
+    "stochastic_uncertainty_threshold": 0.22,
+    "stochastic_line_risk_threshold": 0.45,
+    "robust_line_risk_threshold": 0.72,
+    "robust_nk_threshold": 3.0,
+    "robust_critical_threshold": 0.22,
+    "robust_high_line_ratio_threshold": 0.3
+  },
+  "warning_context_snapshot": {
+    "max_line_risk_prob": 0.85,
+    "high_line_ratio": 0.15053763440860216,
+    "expected_nk_fail_lines": 5.745013,
+    "max_critical_outage_prob": 0.101
+  },
+  "selected_strategy_hours": [
+    {
+      "selected_strategy": "Robust_UC",
+      "hours_selected": 19
+    },
+    {
+      "selected_strategy": "SCUC",
+      "hours_selected": 4
+    },
+    {
+      "selected_strategy": "Stochastic_UC",
+      "hours_selected": 1
+    }
+  ],
+  "contextual_final_metrics": {
+    "model": "Contextual_Adaptive",
+    "total_cost": 57903.1816233532,
+    "generation_cost": 2152.8966928894697,
+    "reserve_cost": 116.39192215974951,
+    "startup_shutdown_cost": 49529.43358962388,
+    "load_shedding_penalty": 6104.459418680092,
+    "EENS": 3.9573373198479542,
+    "critical_load_supply_rate": 0.9145086901188106,
+    "priority_index": 0.8850465322885803,
+    "robustness": 0.8611104693938411,
+    "rapidity": 0.6872892787909722,
+    "sustainability": 0.873904446600266,
+    "reliability_score": 0.8611104693938411,
+    "overload_count": 0,
+    "max_line_loading": 0.00014144448294790786,
+    "total_demand": 28.49269705626372,
+    "solve_success": true,
+    "fallback_relaxation": false,
+    "solver_status": "contextual_selection",
+    "runtime_sec": 360.63646389999485
+  },
+  "outputs": {
+    "dispatch_strategy_selection_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\dispatch_strategy_selection.csv",
+    "dispatch_active_strategy_summary_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\dispatch_active_strategy_summary.csv",
+    "contextual_dispatch_unit_schedule_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\contextual_dispatch_unit_schedule.csv",
+    "contextual_dispatch_load_shedding_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\contextual_dispatch_load_shedding.csv",
+    "contextual_dispatch_hourly_cost_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\contextual_dispatch_hourly_cost.csv",
+    "dispatch_line_flow_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\line_flow.csv",
+    "scuc_schedule_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\scuc_schedule.csv",
+    "stochastic_uc_first_stage_schedule_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\stochastic_uc_first_stage_schedule.csv",
+    "robust_uc_first_stage_schedule_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\robust_uc_first_stage_schedule.csv",
+    "scuc_load_shedding_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\scuc_load_shedding.csv",
+    "stochastic_uc_expected_load_shedding_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\stochastic_uc_expected_load_shedding.csv",
+    "robust_uc_worst_load_shedding_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\robust_uc_worst_load_shedding.csv",
+    "stochastic_uc_scenario_summary_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\stochastic_uc_scenario_summary.csv",
+    "robust_uc_scenario_summary_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\robust_uc_scenario_summary.csv",
+    "dispatch_indicator_weights_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\dispatch_indicator_weights.csv",
+    "dispatch_model_comparison_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\dispatch_model_comparison.csv",
+    "dispatch_ewm_topsis_result_csv": "C:\\Users\\yuhan\\Desktop\\gridagent1\\results\\gridagent_framework\\ieee118_n60_stagewise_20260324_195044\\stage7_dispatch_optimization_comparison\\dispatch_ewm_topsis_result.csv"
+  }
+}

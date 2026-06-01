@@ -1,0 +1,162 @@
+{
+  "experiment": "Stage1 Uncertainty Modeling Method Comparison",
+  "dataset": {
+    "wind_columns": [
+      "wind_renewables_ninja_wind_electricity"
+    ],
+    "pv_columns": [
+      "pv_renewables_ninja_pv_electricity"
+    ],
+    "original_rows": 8784,
+    "used_rows": 8784,
+    "start": "2024-01-01 00:00:00",
+    "end": "2024-12-31 23:00:00"
+  },
+  "methods": {
+    "DPGMM": {
+      "elapsed_sec": 401.26379323005676,
+      "metrics": {
+        "history": {
+          "wind_mean": 0.21991789608058315,
+          "wind_std": 0.2115044899317087,
+          "pv_mean": 0.20253612326197257,
+          "pv_std": 0.2781895120392714,
+          "wind_pv_corr": -0.08794313994274672
+        },
+        "sampled": {
+          "wind_mean": 0.22099729388467781,
+          "wind_std": 0.20873207950296704,
+          "pv_mean": 0.21219208025453581,
+          "pv_std": 0.2578315450385863,
+          "wind_pv_corr": -0.07855443454800405,
+          "wind_90pct_coverage": 0.95525956284153,
+          "pv_90pct_coverage": 0.995787795992714
+        },
+        "typical_weighted": {
+          "scenario_count": 10,
+          "wind_mean": 0.22099729388467776,
+          "wind_std": 0.19773297820939767,
+          "pv_mean": 0.21219208025453573,
+          "pv_std": 0.20898159076871206
+        },
+        "correlation_error": 0.009388705394742666
+      }
+    },
+    "ARIMA": {
+      "elapsed_sec": 16327.843394041061,
+      "metrics": {
+        "history": {
+          "wind_mean": 0.21991789608058315,
+          "wind_std": 0.2115044899317087,
+          "pv_mean": 0.20253612326197257,
+          "pv_std": 0.2781895120392714,
+          "wind_pv_corr": -0.08794313994274672
+        },
+        "sampled": {
+          "wind_mean": 2.073012990430116,
+          "wind_std": 1.8574780312679178,
+          "pv_mean": 2.544134941206934,
+          "pv_std": 2.27495065722859,
+          "wind_pv_corr": 0.1163242768338277,
+          "wind_90pct_coverage": 0.5502049180327869,
+          "pv_90pct_coverage": 0.3698770491803279
+        },
+        "typical_weighted": {
+          "scenario_count": 10,
+          "wind_mean": 2.073012990430116,
+          "wind_std": 1.5296726068709594,
+          "pv_mean": 2.5441349412069334,
+          "pv_std": 1.9748464492855142
+        },
+        "correlation_error": 0.20426741677657442
+      }
+    },
+    "LSTM": {
+      "elapsed_sec": 611.4311547279358,
+      "metrics": {
+        "history": {
+          "wind_mean": 0.21991789608058315,
+          "wind_std": 0.2115044899317087,
+          "pv_mean": 0.20253612326197257,
+          "pv_std": 0.2781895120392714,
+          "wind_pv_corr": -0.08794313994274672
+        },
+        "sampled": {
+          "wind_mean": 0.23239432500361268,
+          "wind_std": 0.2133104391054731,
+          "pv_mean": 0.20567799041383353,
+          "pv_std": 0.2806279583101621,
+          "wind_pv_corr": -0.01670923552083135,
+          "wind_90pct_coverage": 0.31124772313296906,
+          "pv_90pct_coverage": 0.45412112932604737
+        },
+        "typical_weighted": {
+          "scenario_count": 10,
+          "wind_mean": 0.23239432500361265,
+          "wind_std": 0.21307986607223836,
+          "pv_mean": 0.2056779904138335,
+          "pv_std": 0.28041666537537274
+        },
+        "correlation_error": 0.07123390442191536
+      }
+    },
+    "Copula": {
+      "elapsed_sec": 3.2089147567749023,
+      "metrics": {
+        "history": {
+          "wind_mean": 0.21991789608058315,
+          "wind_std": 0.2115044899317087,
+          "pv_mean": 0.20253612326197257,
+          "pv_std": 0.2781895120392714,
+          "wind_pv_corr": -0.08794313994274672
+        },
+        "sampled": {
+          "wind_mean": 0.22171274800566687,
+          "wind_std": 0.20929946822562578,
+          "pv_mean": 0.22353320204788824,
+          "pv_std": 0.2526683553175913,
+          "wind_pv_corr": -0.0739333639416496,
+          "wind_90pct_coverage": 0.9643670309653917,
+          "pv_90pct_coverage": 0.9966985428051002
+        },
+        "typical_weighted": {
+          "scenario_count": 10,
+          "wind_mean": 0.22171274800566687,
+          "wind_std": 0.19141667958125808,
+          "pv_mean": 0.22353320204788824,
+          "pv_std": 0.1581709775378261
+        },
+        "correlation_error": 0.014009776001097124
+      }
+    }
+  },
+  "comparison": {
+    "ARIMA": {
+      "wind_90_coverage": 0.5502049180327869,
+      "pv_90_coverage": 0.3698770491803279,
+      "wind_coverage_diff_vs_dpgmm": -0.4050546448087431,
+      "pv_coverage_diff_vs_dpgmm": -0.6259107468123861,
+      "correlation_error": 0.20426741677657442,
+      "corr_error_improvement_vs_dpgmm": -0.19487871138183177,
+      "elapsed_sec": 16327.843394041061
+    },
+    "LSTM": {
+      "wind_90_coverage": 0.31124772313296906,
+      "pv_90_coverage": 0.45412112932604737,
+      "wind_coverage_diff_vs_dpgmm": -0.644011839708561,
+      "pv_coverage_diff_vs_dpgmm": -0.5416666666666667,
+      "correlation_error": 0.07123390442191536,
+      "corr_error_improvement_vs_dpgmm": -0.0618451990271727,
+      "elapsed_sec": 611.4311547279358
+    },
+    "Copula": {
+      "wind_90_coverage": 0.9643670309653917,
+      "pv_90_coverage": 0.9966985428051002,
+      "wind_coverage_diff_vs_dpgmm": 0.00910746812386165,
+      "pv_coverage_diff_vs_dpgmm": 0.0009107468123861207,
+      "correlation_error": 0.014009776001097124,
+      "corr_error_improvement_vs_dpgmm": -0.004621070606354458,
+      "elapsed_sec": 3.2089147567749023
+    }
+  }
+}
