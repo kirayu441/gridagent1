@@ -27,6 +27,11 @@ from .graphsage import GraphSAGEModel
 from .stgcn import STGCNModel
 from .baseline_gnn import BaselineGNNModel
 from .metapath_v1 import MetaPathV1Model
+from .metapath_local import (
+    MetaPathLocalResidualModel,
+    MetaPathLocalRiskAttentionModel,
+    MetaPathLocalRiskAttentionResidualModel,
+)
 from .mlp import MLPModel
 
 # Model registry for easy access
@@ -37,6 +42,9 @@ MODEL_REGISTRY = {
     'stgcn': STGCNModel,
     'baseline_gnn': BaselineGNNModel,
     'metapath_v1': MetaPathV1Model,
+    'metapath_local': MetaPathLocalResidualModel,
+    'metapath_local_riskattn': MetaPathLocalRiskAttentionModel,
+    'metapath_local_riskattn_resid': MetaPathLocalRiskAttentionResidualModel,
     'mlp': MLPModel,
 }
 
@@ -48,6 +56,9 @@ __all__ = [
     'STGCNModel',
     'BaselineGNNModel',
     'MetaPathV1Model',
+    'MetaPathLocalResidualModel',
+    'MetaPathLocalRiskAttentionModel',
+    'MetaPathLocalRiskAttentionResidualModel',
     'MLPModel',
     'MODEL_REGISTRY',
 ]

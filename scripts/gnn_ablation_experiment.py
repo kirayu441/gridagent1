@@ -65,6 +65,9 @@ from gnn_models import (
     STGCNModel,
     BaselineGNNModel,
     MetaPathV1Model,
+    MetaPathLocalResidualModel,
+    MetaPathLocalRiskAttentionModel,
+    MetaPathLocalRiskAttentionResidualModel,
     MLPModel,
     MODEL_REGISTRY,
 )
@@ -107,6 +110,9 @@ class ExperimentConfig:
     metapath_gate_reg_lambda: float = 0.01
     metapath_attention_entropy_reg_lambda: float = 0.005
     metapath_warmup_epochs: int = 100
+    rank_loss_beta: float = 0.0
+    rank_loss_margin: float = 0.02
+    rank_loss_min_diff: float = 0.02
     
     # High-risk evaluation
     high_risk_threshold: float = 0.10
@@ -159,9 +165,21 @@ class ExperimentResult:
     
     # Ranking metrics
     spearman_corr: float
+    precision_at_5: float = float("nan")
+    recall_at_5: float = float("nan")
+    hit_at_5: float = float("nan")
+    ndcg_at_5: float = float("nan")
+    precision_at_10: float = float("nan")
+    recall_at_10: float = float("nan")
+    hit_at_10: float = float("nan")
+    ndcg_at_10: float = float("nan")
+    precision_at_20: float = float("nan")
+    recall_at_20: float = float("nan")
+    hit_at_20: float = float("nan")
+    ndcg_at_20: float = float("nan")
     
     # Model info
-    num_parameters: int
+    num_parameters: int = 0
     
     # Per-epoch history
     history: list[dict] = field(default_factory=list)
@@ -194,6 +212,22 @@ def weighted_mse_loss(pred: torch.Tensor, truth: torch.Tensor, weight: torch.Ten
     """Weighted MSE loss with normalization."""
     err2 = (pred - truth) ** 2
     return (err2 * weight).mean() / weight.mean().clamp_min(1e-6)
+
+
+def pairwise_ranking_loss(
+    pred: torch.Tensor,
+    truth: torch.Tensor,
+    margin: float,
+    min_diff: float,
+) -> torch.Tensor:
+    """Hinge ranking loss over line pairs within one timestamp."""
+    diff_truth = truth.unsqueeze(1) - truth.unsqueeze(0)
+    mask = diff_truth > float(min_diff)
+    if not bool(mask.any()):
+        return pred.new_tensor(0.0)
+    diff_pred = pred.unsqueeze(1) - pred.unsqueeze(0)
+    loss = F.relu(float(margin) - diff_pred[mask])
+    return loss.mean()
 
 
 def evaluate_prob_metrics(
@@ -273,6 +307,44 @@ def compute_spearman_correlation(pred: np.ndarray, truth: np.ndarray) -> float:
     return float(corr) if not np.isnan(corr) else 0.0
 
 
+def _dcg(relevances: list[int]) -> float:
+    return float(sum(rel / np.log2(i + 2) for i, rel in enumerate(relevances)))
+
+
+def compute_topk_ranking_metrics(
+    pred: np.ndarray,
+    truth: np.ndarray,
+    ks: tuple[int, ...] = (5, 10, 20),
+) -> dict[str, float]:
+    """Compute line-level Top-k metrics from validation predictions.
+
+    The score for each line is the maximum predicted/true risk over the
+    validation window. This matches the paper's line-ranking use case.
+    """
+    if pred.size == 0 or truth.size == 0:
+        return {}
+
+    pred_line_score = np.max(np.asarray(pred, dtype=float), axis=0)
+    truth_line_score = np.max(np.asarray(truth, dtype=float), axis=0)
+    pred_order = list(np.argsort(-pred_line_score))
+    truth_order = list(np.argsort(-truth_line_score))
+
+    metrics: dict[str, float] = {}
+    for k in ks:
+        kk = int(min(max(k, 1), len(pred_order), len(truth_order)))
+        pred_top = set(pred_order[:kk])
+        truth_top = set(truth_order[:kk])
+        hits = len(pred_top & truth_top)
+        metrics[f"precision_at_{k}"] = float(hits / max(len(pred_top), 1))
+        metrics[f"recall_at_{k}"] = float(hits / max(len(truth_top), 1))
+        metrics[f"hit_at_{k}"] = float(1.0 if hits > 0 else 0.0)
+        relevances = [1 if idx in truth_top else 0 for idx in pred_order[:kk]]
+        denom = _dcg([1] * kk)
+        metrics[f"ndcg_at_{k}"] = float(_dcg(relevances) / denom) if denom > 0 else float("nan")
+
+    return metrics
+
+
 # ============================================================================
 # Training Functions
 # ============================================================================
@@ -311,7 +383,12 @@ def train_model(
     
     # Prepare metapath data
     metapath_enabled = (
-        config.model_type == "metapath_v1"
+        config.model_type in {
+            "metapath_v1",
+            "metapath_local",
+            "metapath_local_riskattn",
+            "metapath_local_riskattn_resid",
+        }
         and data.metapath_index is not None
         and data.metapath_mask is not None
         and data.metapath_names is not None
@@ -341,6 +418,7 @@ def train_model(
     attn_entropy_reg_active = bool(
         metapath_enabled and float(config.metapath_attention_entropy_reg_lambda) > 0.0
     )
+    rank_loss_active = bool(float(config.rank_loss_beta) > 0.0)
     warmup_epochs = max(int(config.metapath_warmup_epochs), 0)
     
     # Training loop
@@ -356,6 +434,7 @@ def train_model(
         train_loss = torch.tensor(0.0, device=device)
         train_gate_reg = torch.tensor(0.0, device=device)
         train_attn_entropy = torch.tensor(0.0, device=device)
+        train_rank_loss = torch.tensor(0.0, device=device)
         
         # Warmup scale for metapath
         warmup_scale = 1.0
@@ -395,6 +474,16 @@ def train_model(
                 pred_loss_t = weighted_mse_loss(pred_t, labels[t], weight_t)
             else:
                 pred_loss_t = F.mse_loss(pred_t, labels[t])
+
+            if rank_loss_active:
+                rank_loss_t = pairwise_ranking_loss(
+                    pred=pred_t,
+                    truth=labels[t],
+                    margin=float(config.rank_loss_margin),
+                    min_diff=float(config.rank_loss_min_diff),
+                )
+                train_rank_loss = train_rank_loss + rank_loss_t
+                pred_loss_t = pred_loss_t + float(config.rank_loss_beta) * rank_loss_t
             
             train_loss = train_loss + pred_loss_t
             
@@ -408,6 +497,8 @@ def train_model(
         
         # Average losses
         train_loss = train_loss / max(len(idx_train), 1)
+        if rank_loss_active:
+            train_rank_loss = train_rank_loss / max(len(idx_train), 1)
         if gate_reg_active:
             train_gate_reg = train_gate_reg / max(len(idx_train), 1)
             train_loss = train_loss + float(config.metapath_gate_reg_lambda) * train_gate_reg
@@ -449,6 +540,7 @@ def train_model(
             "warmup_scale": float(warmup_scale),
             "train_gate_reg": float(train_gate_reg.item()),
             "train_attn_entropy": float(train_attn_entropy.item()),
+            "train_rank_loss": float(train_rank_loss.item()),
         })
         
         # Early stopping check
@@ -574,6 +666,39 @@ def build_model(config: ExperimentConfig, data: WarningDataset) -> nn.Module:
             num_layers=config.num_layers,
             dropout=config.dropout,
         )
+
+    elif config.model_type == "metapath_local":
+        return MetaPathLocalResidualModel(
+            node_dim=node_dim,
+            edge_dyn_dim=edge_dyn_dim,
+            edge_static_dim=edge_static_dim,
+            hidden_dim=config.hidden_dim,
+            num_metapaths=len(data.metapath_names) if data.metapath_names else 4,
+            num_layers=config.num_layers,
+            dropout=config.dropout,
+        )
+
+    elif config.model_type == "metapath_local_riskattn":
+        return MetaPathLocalRiskAttentionModel(
+            node_dim=node_dim,
+            edge_dyn_dim=edge_dyn_dim,
+            edge_static_dim=edge_static_dim,
+            hidden_dim=config.hidden_dim,
+            num_metapaths=len(data.metapath_names) if data.metapath_names else 4,
+            num_layers=config.num_layers,
+            dropout=config.dropout,
+        )
+
+    elif config.model_type == "metapath_local_riskattn_resid":
+        return MetaPathLocalRiskAttentionResidualModel(
+            node_dim=node_dim,
+            edge_dyn_dim=edge_dyn_dim,
+            edge_static_dim=edge_static_dim,
+            hidden_dim=config.hidden_dim,
+            num_metapaths=len(data.metapath_names) if data.metapath_names else 4,
+            num_layers=config.num_layers,
+            dropout=config.dropout,
+        )
     
     elif config.model_type == "mlp":
         return MLPModel(
@@ -616,7 +741,12 @@ def evaluate_model(
     dst_idx = torch.tensor([node_to_idx[int(b)] for b in data.to_bus], dtype=torch.long, device=device)
     
     metapath_enabled = (
-        config.model_type == "metapath_v1"
+        config.model_type in {
+            "metapath_v1",
+            "metapath_local",
+            "metapath_local_riskattn",
+            "metapath_local_riskattn_resid",
+        }
         and data.metapath_index is not None
         and data.metapath_mask is not None
     )
@@ -686,6 +816,7 @@ def compute_result_metrics(
     
     # Compute Spearman correlation
     spearman_corr = compute_spearman_correlation(pred, truth)
+    topk_metrics = compute_topk_ranking_metrics(pred, truth)
     
     # Find best validation MSE from history
     best_val_mse = min(h["val_mse"] for h in history) if history else float("inf")
@@ -708,6 +839,18 @@ def compute_result_metrics(
         top_risk_ratio=prob_metrics["top_risk_ratio"],
         top_risk_threshold=prob_metrics["top_risk_threshold"],
         spearman_corr=spearman_corr,
+        precision_at_5=topk_metrics.get("precision_at_5", float("nan")),
+        recall_at_5=topk_metrics.get("recall_at_5", float("nan")),
+        hit_at_5=topk_metrics.get("hit_at_5", float("nan")),
+        ndcg_at_5=topk_metrics.get("ndcg_at_5", float("nan")),
+        precision_at_10=topk_metrics.get("precision_at_10", float("nan")),
+        recall_at_10=topk_metrics.get("recall_at_10", float("nan")),
+        hit_at_10=topk_metrics.get("hit_at_10", float("nan")),
+        ndcg_at_10=topk_metrics.get("ndcg_at_10", float("nan")),
+        precision_at_20=topk_metrics.get("precision_at_20", float("nan")),
+        recall_at_20=topk_metrics.get("recall_at_20", float("nan")),
+        hit_at_20=topk_metrics.get("hit_at_20", float("nan")),
+        ndcg_at_20=topk_metrics.get("ndcg_at_20", float("nan")),
         num_parameters=sum(p.numel() for p in model.parameters() if p.requires_grad),
         history=history,
         winner_by_metric={},
@@ -745,6 +888,18 @@ def save_result(result: ExperimentResult, output_dir: Path) -> None:
         "top_risk_count": result.top_risk_count,
         "top_risk_ratio": result.top_risk_ratio,
         "spearman_corr": result.spearman_corr,
+        "precision_at_5": result.precision_at_5,
+        "recall_at_5": result.recall_at_5,
+        "hit_at_5": result.hit_at_5,
+        "ndcg_at_5": result.ndcg_at_5,
+        "precision_at_10": result.precision_at_10,
+        "recall_at_10": result.recall_at_10,
+        "hit_at_10": result.hit_at_10,
+        "ndcg_at_10": result.ndcg_at_10,
+        "precision_at_20": result.precision_at_20,
+        "recall_at_20": result.recall_at_20,
+        "hit_at_20": result.hit_at_20,
+        "ndcg_at_20": result.ndcg_at_20,
         "num_parameters": result.num_parameters,
     }])
     metrics_df.to_csv(output_dir / "metrics.csv", index=False)
@@ -758,6 +913,44 @@ def save_result(result: ExperimentResult, output_dir: Path) -> None:
     if result.winner_by_metric:
         with open(output_dir / "winner.json", "w", encoding="utf-8") as f:
             json.dump(result.winner_by_metric, f, indent=2)
+
+
+def save_prediction_artifacts(
+    pred: np.ndarray,
+    truth: np.ndarray,
+    data: WarningDataset,
+    config: ExperimentConfig,
+) -> None:
+    """Save validation prediction details and line-level ranking table."""
+    output_dir = config.output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    n_time = data.node_x.shape[0]
+    split = int(np.floor(n_time * config.train_ratio))
+    split = max(1, min(split, n_time - 1)) if n_time > 1 else 1
+    val_timestamps = data.timestamps[split:n_time]
+
+    wide_pred = pd.DataFrame(pred, columns=data.line_ids)
+    wide_pred.insert(0, "timestamp", val_timestamps.astype(str).to_numpy())
+    wide_pred.to_csv(output_dir / "validation_predictions_wide.csv", index=False)
+
+    wide_truth = pd.DataFrame(truth, columns=data.line_ids)
+    wide_truth.insert(0, "timestamp", val_timestamps.astype(str).to_numpy())
+    wide_truth.to_csv(output_dir / "validation_truth_wide.csv", index=False)
+
+    pred_score = np.max(pred, axis=0)
+    truth_score = np.max(truth, axis=0)
+    rank_df = pd.DataFrame(
+        {
+            "line_id": data.line_ids,
+            "predicted_max_risk": pred_score,
+            "true_max_risk": truth_score,
+        }
+    )
+    rank_df["predicted_rank"] = rank_df["predicted_max_risk"].rank(method="first", ascending=False).astype(int)
+    rank_df["true_rank"] = rank_df["true_max_risk"].rank(method="first", ascending=False).astype(int)
+    rank_df = rank_df.sort_values("predicted_rank")
+    rank_df.to_csv(output_dir / "line_ranking_validation.csv", index=False)
 
 
 def save_comparison_results(results: list[ExperimentResult], output_dir: Path) -> None:
@@ -781,6 +974,16 @@ def save_comparison_results(results: list[ExperimentResult], output_dir: Path) -
             "high_risk_mae": r.high_risk_mae,
             "top_risk_mae": r.top_risk_mae,
             "spearman_corr": r.spearman_corr,
+            "precision_at_5": r.precision_at_5,
+            "recall_at_5": r.recall_at_5,
+            "ndcg_at_5": r.ndcg_at_5,
+            "precision_at_10": r.precision_at_10,
+            "recall_at_10": r.recall_at_10,
+            "hit_at_10": r.hit_at_10,
+            "ndcg_at_10": r.ndcg_at_10,
+            "precision_at_20": r.precision_at_20,
+            "recall_at_20": r.recall_at_20,
+            "ndcg_at_20": r.ndcg_at_20,
             "train_time_seconds": r.train_time_seconds,
             "num_parameters": r.num_parameters,
         }
@@ -912,6 +1115,7 @@ def run_single_experiment(config: ExperimentConfig) -> ExperimentResult:
     
     # Save result
     save_result(result, config.output_dir)
+    save_prediction_artifacts(pred, truth, data, config)
     
     print(f"\nResults:")
     print(f"  Val MAE: {result.val_mae:.6f}")
@@ -927,7 +1131,17 @@ def run_single_experiment(config: ExperimentConfig) -> ExperimentResult:
 def run_all_experiments(output_root: Path) -> list[ExperimentResult]:
     """Run experiments for all model types."""
     
-    model_types = ["gcn", "gat", "graphsage", "stgcn", "baseline_gnn", "metapath_v1"]
+    model_types = [
+        "gcn",
+        "gat",
+        "graphsage",
+        "stgcn",
+        "baseline_gnn",
+        "metapath_v1",
+        "metapath_local",
+        "metapath_local_riskattn",
+        "metapath_local_riskattn_resid",
+    ]
     results = []
     
     # Find failure CSV
@@ -974,7 +1188,19 @@ def main():
     parser.add_argument(
         "--model-type",
         type=str,
-        choices=["gcn", "gat", "graphsage", "stgcn", "baseline_gnn", "metapath_v1", "mlp", "all"],
+        choices=[
+            "gcn",
+            "gat",
+            "graphsage",
+            "stgcn",
+            "baseline_gnn",
+            "metapath_v1",
+            "metapath_local",
+            "metapath_local_riskattn",
+            "metapath_local_riskattn_resid",
+            "mlp",
+            "all",
+        ],
         default="all",
         help="Model type to train",
     )
@@ -1043,6 +1269,9 @@ def main():
     parser.add_argument("--patience", type=int, default=60, help="Early stopping patience")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--train-ratio", type=float, default=0.6, help="Training data ratio")
+    parser.add_argument("--rank-loss-beta", type=float, default=0.0, help="Weight for pairwise ranking loss")
+    parser.add_argument("--rank-loss-margin", type=float, default=0.02, help="Margin for pairwise ranking loss")
+    parser.add_argument("--rank-loss-min-diff", type=float, default=0.02, help="Minimum label gap for ranking pairs")
     
     args = parser.parse_args()
     
@@ -1071,6 +1300,9 @@ def main():
             patience=args.patience,
             seed=args.seed,
             train_ratio=args.train_ratio,
+            rank_loss_beta=args.rank_loss_beta,
+            rank_loss_margin=args.rank_loss_margin,
+            rank_loss_min_diff=args.rank_loss_min_diff,
             num_heads=args.num_heads,
             aggregation=args.aggregation,
         )
