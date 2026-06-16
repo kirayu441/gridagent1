@@ -260,3 +260,90 @@ class MetaPathV1Model(BaseGNNModel):
     
     def __repr__(self) -> str:
         return f"MetaPathV1Model(hidden_dim={self.hidden_dim}, num_metapaths={self.num_metapaths})"
+
+
+class MetaPathV1LocalGateModel(MetaPathV1Model):
+    """MetaPath V1 with a conservative local line-feature output gate.
+
+    The gate starts as an identity scale, then learns whether local line
+    features support or suppress graph-propagated risk.
+    """
+
+    def __init__(
+        self,
+        node_dim: int,
+        edge_dyn_dim: int,
+        edge_static_dim: int,
+        hidden_dim: int = 64,
+        num_metapaths: int = 4,
+        num_layers: int = 2,
+        dropout: float = 0.1,
+    ) -> None:
+        super().__init__(
+            node_dim=node_dim,
+            edge_dyn_dim=edge_dyn_dim,
+            edge_static_dim=edge_static_dim,
+            hidden_dim=hidden_dim,
+            num_metapaths=num_metapaths,
+            num_layers=num_layers,
+            dropout=dropout,
+        )
+        local_dim = edge_dyn_dim + edge_static_dim
+        self.local_output_gate = nn.Sequential(
+            nn.Linear(local_dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(p=dropout * 0.5),
+            nn.Linear(hidden_dim, 1),
+        )
+        gate_last = self.local_output_gate[-1]
+        if isinstance(gate_last, nn.Linear):
+            nn.init.zeros_(gate_last.weight)
+            nn.init.constant_(gate_last.bias, 0.0)
+
+    def forward(
+        self,
+        node_x: torch.Tensor,
+        edge_dyn_x: torch.Tensor,
+        edge_static_x: torch.Tensor,
+        src: torch.Tensor,
+        dst: torch.Tensor,
+        metapath_index: torch.Tensor | None = None,
+        metapath_mask: torch.Tensor | None = None,
+        delta_scale: float = 1.0,
+        return_attention: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        h = self.node_encoder(node_x)
+        h = self.mp1(h, src, dst)
+        h = self.mp2(h, src, dst)
+
+        edge_raw = torch.cat([h[src], h[dst], edge_dyn_x, edge_static_x], dim=1)
+        edge_local = torch.cat([edge_dyn_x, edge_static_x], dim=1)
+        base_logit = self.base_head(edge_raw).squeeze(1)
+
+        if metapath_index is None or metapath_mask is None:
+            raw_prob = torch.sigmoid(base_logit)
+            alpha = None
+            gate = None
+        else:
+            edge_repr = self.edge_base_encoder(edge_raw)
+            metapath_context, alpha = self.metapath_block(
+                edge_repr=edge_repr,
+                metapath_index=metapath_index,
+                metapath_mask=metapath_mask,
+            )
+            delta_feat = torch.cat([edge_repr, metapath_context, edge_dyn_x, edge_static_x], dim=1)
+            delta_logit = self.delta_head(delta_feat).squeeze(1)
+            gate = torch.sigmoid(self.gate_head(edge_raw).squeeze(1))
+            scale = float(np.clip(delta_scale, 0.0, 1.0))
+            raw_prob = torch.sigmoid(base_logit + (scale * gate) * delta_logit)
+
+        local_scale = 0.5 + torch.sigmoid(self.local_output_gate(edge_local).squeeze(1))
+        out = torch.clamp(raw_prob * local_scale, min=0.0, max=1.0)
+
+        if return_attention:
+            return out, alpha, gate
+        return out
+
+    @property
+    def model_name(self) -> str:
+        return "MetaPath-V1-LocalGate"

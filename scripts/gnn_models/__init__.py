@@ -26,7 +26,7 @@ from .gat import GATModel
 from .graphsage import GraphSAGEModel
 from .stgcn import STGCNModel
 from .baseline_gnn import BaselineGNNModel
-from .metapath_v1 import MetaPathV1Model
+from .metapath_v1 import MetaPathV1LocalGateModel, MetaPathV1Model
 from .metapath_local import (
     MetaPathLocalResidualModel,
     MetaPathLocalRiskAttentionModel,
@@ -42,6 +42,7 @@ MODEL_REGISTRY = {
     'stgcn': STGCNModel,
     'baseline_gnn': BaselineGNNModel,
     'metapath_v1': MetaPathV1Model,
+    'metapath_v1_local_gate': MetaPathV1LocalGateModel,
     'metapath_local': MetaPathLocalResidualModel,
     'metapath_local_riskattn': MetaPathLocalRiskAttentionModel,
     'metapath_local_riskattn_resid': MetaPathLocalRiskAttentionResidualModel,
@@ -56,6 +57,7 @@ __all__ = [
     'STGCNModel',
     'BaselineGNNModel',
     'MetaPathV1Model',
+    'MetaPathV1LocalGateModel',
     'MetaPathLocalResidualModel',
     'MetaPathLocalRiskAttentionModel',
     'MetaPathLocalRiskAttentionResidualModel',

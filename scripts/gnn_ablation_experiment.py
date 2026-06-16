@@ -64,6 +64,7 @@ from gnn_models import (
     GraphSAGEModel,
     STGCNModel,
     BaselineGNNModel,
+    MetaPathV1LocalGateModel,
     MetaPathV1Model,
     MetaPathLocalResidualModel,
     MetaPathLocalRiskAttentionModel,
@@ -113,6 +114,8 @@ class ExperimentConfig:
     rank_loss_beta: float = 0.0
     rank_loss_margin: float = 0.02
     rank_loss_min_diff: float = 0.02
+    fp_loss_lambda: float = 0.0
+    fp_loss_margin: float = 0.002
     
     # High-risk evaluation
     high_risk_threshold: float = 0.10
@@ -177,6 +180,8 @@ class ExperimentResult:
     recall_at_20: float = float("nan")
     hit_at_20: float = float("nan")
     ndcg_at_20: float = float("nan")
+    fp_at_10_true_rank_gt_30: float = float("nan")
+    fp_at_20_true_rank_gt_50: float = float("nan")
     
     # Model info
     num_parameters: int = 0
@@ -228,6 +233,16 @@ def pairwise_ranking_loss(
     diff_pred = pred.unsqueeze(1) - pred.unsqueeze(0)
     loss = F.relu(float(margin) - diff_pred[mask])
     return loss.mean()
+
+
+def false_positive_penalty_loss(
+    pred: torch.Tensor,
+    truth: torch.Tensor,
+    margin: float,
+) -> torch.Tensor:
+    """Penalize predictions that exceed truth by more than a margin."""
+    over_pred = pred - truth - float(margin)
+    return torch.mean(F.relu(over_pred) ** 2)
 
 
 def evaluate_prob_metrics(
@@ -328,6 +343,9 @@ def compute_topk_ranking_metrics(
     truth_line_score = np.max(np.asarray(truth, dtype=float), axis=0)
     pred_order = list(np.argsort(-pred_line_score))
     truth_order = list(np.argsort(-truth_line_score))
+    true_rank = np.empty(len(truth_order), dtype=int)
+    for pos, idx in enumerate(truth_order, start=1):
+        true_rank[idx] = pos
 
     metrics: dict[str, float] = {}
     for k in ks:
@@ -341,6 +359,12 @@ def compute_topk_ranking_metrics(
         relevances = [1 if idx in truth_top else 0 for idx in pred_order[:kk]]
         denom = _dcg([1] * kk)
         metrics[f"ndcg_at_{k}"] = float(_dcg(relevances) / denom) if denom > 0 else float("nan")
+
+    if len(pred_order) > 0:
+        k10 = min(10, len(pred_order))
+        k20 = min(20, len(pred_order))
+        metrics["fp_at_10_true_rank_gt_30"] = float(sum(true_rank[idx] > 30 for idx in pred_order[:k10]))
+        metrics["fp_at_20_true_rank_gt_50"] = float(sum(true_rank[idx] > 50 for idx in pred_order[:k20]))
 
     return metrics
 
@@ -385,6 +409,7 @@ def train_model(
     metapath_enabled = (
         config.model_type in {
             "metapath_v1",
+            "metapath_v1_local_gate",
             "metapath_local",
             "metapath_local_riskattn",
             "metapath_local_riskattn_resid",
@@ -419,6 +444,7 @@ def train_model(
         metapath_enabled and float(config.metapath_attention_entropy_reg_lambda) > 0.0
     )
     rank_loss_active = bool(float(config.rank_loss_beta) > 0.0)
+    fp_loss_active = bool(float(config.fp_loss_lambda) > 0.0)
     warmup_epochs = max(int(config.metapath_warmup_epochs), 0)
     
     # Training loop
@@ -435,6 +461,7 @@ def train_model(
         train_gate_reg = torch.tensor(0.0, device=device)
         train_attn_entropy = torch.tensor(0.0, device=device)
         train_rank_loss = torch.tensor(0.0, device=device)
+        train_fp_loss = torch.tensor(0.0, device=device)
         
         # Warmup scale for metapath
         warmup_scale = 1.0
@@ -484,6 +511,15 @@ def train_model(
                 )
                 train_rank_loss = train_rank_loss + rank_loss_t
                 pred_loss_t = pred_loss_t + float(config.rank_loss_beta) * rank_loss_t
+
+            if fp_loss_active:
+                fp_loss_t = false_positive_penalty_loss(
+                    pred=pred_t,
+                    truth=labels[t],
+                    margin=float(config.fp_loss_margin),
+                )
+                train_fp_loss = train_fp_loss + fp_loss_t
+                pred_loss_t = pred_loss_t + float(config.fp_loss_lambda) * fp_loss_t
             
             train_loss = train_loss + pred_loss_t
             
@@ -499,6 +535,8 @@ def train_model(
         train_loss = train_loss / max(len(idx_train), 1)
         if rank_loss_active:
             train_rank_loss = train_rank_loss / max(len(idx_train), 1)
+        if fp_loss_active:
+            train_fp_loss = train_fp_loss / max(len(idx_train), 1)
         if gate_reg_active:
             train_gate_reg = train_gate_reg / max(len(idx_train), 1)
             train_loss = train_loss + float(config.metapath_gate_reg_lambda) * train_gate_reg
@@ -541,6 +579,7 @@ def train_model(
             "train_gate_reg": float(train_gate_reg.item()),
             "train_attn_entropy": float(train_attn_entropy.item()),
             "train_rank_loss": float(train_rank_loss.item()),
+            "train_fp_loss": float(train_fp_loss.item()),
         })
         
         # Early stopping check
@@ -667,6 +706,17 @@ def build_model(config: ExperimentConfig, data: WarningDataset) -> nn.Module:
             dropout=config.dropout,
         )
 
+    elif config.model_type == "metapath_v1_local_gate":
+        return MetaPathV1LocalGateModel(
+            node_dim=node_dim,
+            edge_dyn_dim=edge_dyn_dim,
+            edge_static_dim=edge_static_dim,
+            hidden_dim=config.hidden_dim,
+            num_metapaths=len(data.metapath_names) if data.metapath_names else 4,
+            num_layers=config.num_layers,
+            dropout=config.dropout,
+        )
+
     elif config.model_type == "metapath_local":
         return MetaPathLocalResidualModel(
             node_dim=node_dim,
@@ -743,6 +793,7 @@ def evaluate_model(
     metapath_enabled = (
         config.model_type in {
             "metapath_v1",
+            "metapath_v1_local_gate",
             "metapath_local",
             "metapath_local_riskattn",
             "metapath_local_riskattn_resid",
@@ -851,6 +902,8 @@ def compute_result_metrics(
         recall_at_20=topk_metrics.get("recall_at_20", float("nan")),
         hit_at_20=topk_metrics.get("hit_at_20", float("nan")),
         ndcg_at_20=topk_metrics.get("ndcg_at_20", float("nan")),
+        fp_at_10_true_rank_gt_30=topk_metrics.get("fp_at_10_true_rank_gt_30", float("nan")),
+        fp_at_20_true_rank_gt_50=topk_metrics.get("fp_at_20_true_rank_gt_50", float("nan")),
         num_parameters=sum(p.numel() for p in model.parameters() if p.requires_grad),
         history=history,
         winner_by_metric={},
@@ -900,6 +953,8 @@ def save_result(result: ExperimentResult, output_dir: Path) -> None:
         "recall_at_20": result.recall_at_20,
         "hit_at_20": result.hit_at_20,
         "ndcg_at_20": result.ndcg_at_20,
+        "fp_at_10_true_rank_gt_30": result.fp_at_10_true_rank_gt_30,
+        "fp_at_20_true_rank_gt_50": result.fp_at_20_true_rank_gt_50,
         "num_parameters": result.num_parameters,
     }])
     metrics_df.to_csv(output_dir / "metrics.csv", index=False)
@@ -984,6 +1039,8 @@ def save_comparison_results(results: list[ExperimentResult], output_dir: Path) -
             "precision_at_20": r.precision_at_20,
             "recall_at_20": r.recall_at_20,
             "ndcg_at_20": r.ndcg_at_20,
+            "fp_at_10_true_rank_gt_30": r.fp_at_10_true_rank_gt_30,
+            "fp_at_20_true_rank_gt_50": r.fp_at_20_true_rank_gt_50,
             "train_time_seconds": r.train_time_seconds,
             "num_parameters": r.num_parameters,
         }
@@ -1138,6 +1195,7 @@ def run_all_experiments(output_root: Path) -> list[ExperimentResult]:
         "stgcn",
         "baseline_gnn",
         "metapath_v1",
+        "metapath_v1_local_gate",
         "metapath_local",
         "metapath_local_riskattn",
         "metapath_local_riskattn_resid",
@@ -1195,6 +1253,7 @@ def main():
             "stgcn",
             "baseline_gnn",
             "metapath_v1",
+            "metapath_v1_local_gate",
             "metapath_local",
             "metapath_local_riskattn",
             "metapath_local_riskattn_resid",
@@ -1272,6 +1331,8 @@ def main():
     parser.add_argument("--rank-loss-beta", type=float, default=0.0, help="Weight for pairwise ranking loss")
     parser.add_argument("--rank-loss-margin", type=float, default=0.02, help="Margin for pairwise ranking loss")
     parser.add_argument("--rank-loss-min-diff", type=float, default=0.02, help="Minimum label gap for ranking pairs")
+    parser.add_argument("--fp-loss-lambda", type=float, default=0.0, help="Weight for false-positive penalty")
+    parser.add_argument("--fp-loss-margin", type=float, default=0.002, help="Allowed over-prediction margin before FP penalty")
     
     args = parser.parse_args()
     
@@ -1303,6 +1364,8 @@ def main():
             rank_loss_beta=args.rank_loss_beta,
             rank_loss_margin=args.rank_loss_margin,
             rank_loss_min_diff=args.rank_loss_min_diff,
+            fp_loss_lambda=args.fp_loss_lambda,
+            fp_loss_margin=args.fp_loss_margin,
             num_heads=args.num_heads,
             aggregation=args.aggregation,
         )
