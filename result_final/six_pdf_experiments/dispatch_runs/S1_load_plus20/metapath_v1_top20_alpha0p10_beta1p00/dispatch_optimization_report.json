@@ -1,0 +1,93 @@
+{
+  "module": "Dispatch Optimization",
+  "objective": "min generation + reserve + startup/shutdown + load shedding penalty",
+  "inputs": {
+    "grid": "D:\\gridagent1\\result_final\\six_pdf_experiments\\inputs\\S1_load_plus20_grid.json",
+    "trim_input": "D:\\gridagent1\\result_final\\six_pdf_experiments\\inputs\\S1_load_plus20_TRIM.csv",
+    "failure_csv": "D:\\gridagent1\\gridagent_final\\stage7\\inputs\\line_failure_timeseries_schloemer.csv",
+    "uncertainty_dir": "D:\\gridagent1\\gridagent_final\\stage7\\inputs\\stage1_formal_output",
+    "line_risk_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\inputs\\S1_load_plus20_metapath_v1_top20_alpha0p10pcsv",
+    "time_horizon": {
+      "start": "2024-09-02 00:00:00",
+      "end": "2024-09-02 23:00:00",
+      "hours": 24
+    },
+    "stochastic_scenarios": 6,
+    "robust_set_size": 5
+  },
+  "solver": {
+    "time_limit_sec": 600.0,
+    "mip_gap": 0.02,
+    "seed": 60623
+  },
+  "strategy_mode": "contextual",
+  "strategy_rules": {
+    "stochastic_uncertainty_threshold": 0.22,
+    "stochastic_line_risk_threshold": 0.45,
+    "robust_line_risk_threshold": 0.72,
+    "robust_nk_threshold": 3.0,
+    "robust_critical_threshold": 0.22,
+    "robust_high_line_ratio_threshold": 0.3
+  },
+  "warning_context_snapshot": {
+    "max_line_risk_prob": 1.0,
+    "high_line_ratio": 0.10752688172043011,
+    "expected_nk_fail_lines": 0.0,
+    "max_critical_outage_prob": 0.0
+  },
+  "selected_strategy_hours": [
+    {
+      "selected_strategy": "Robust_UC",
+      "hours_selected": 17
+    },
+    {
+      "selected_strategy": "SCUC",
+      "hours_selected": 5
+    },
+    {
+      "selected_strategy": "Stochastic_UC",
+      "hours_selected": 2
+    }
+  ],
+  "contextual_final_metrics": {
+    "model": "Contextual_Adaptive",
+    "total_cost": 102761.56863722437,
+    "generation_cost": 3054.2315917320193,
+    "reserve_cost": 123.08845128305926,
+    "startup_shutdown_cost": 99584.24859420929,
+    "load_shedding_penalty": 0.0,
+    "EENS": 0.0,
+    "critical_load_supply_rate": 1.0,
+    "priority_index": 1.0,
+    "robustness": 1.0,
+    "rapidity": 1.0,
+    "sustainability": 1.0,
+    "reliability_score": 1.0,
+    "overload_count": 0,
+    "max_line_loading": 0.0001111314031303413,
+    "total_demand": 34.19123646751646,
+    "solve_success": true,
+    "fallback_relaxation": false,
+    "solver_status": "contextual_selection",
+    "runtime_sec": 2214.944768699992
+  },
+  "outputs": {
+    "dispatch_strategy_selection_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\dispatch_strategy_selection.csv",
+    "dispatch_active_strategy_summary_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\dispatch_active_strategy_summary.csv",
+    "contextual_dispatch_unit_schedule_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\contextual_dispatch_unit_schedule.csv",
+    "contextual_dispatch_load_shedding_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\contextual_dispatch_load_shedding.csv",
+    "contextual_dispatch_hourly_cost_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\contextual_dispatch_hourly_cost.csv",
+    "dispatch_line_flow_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\line_flow.csv",
+    "scuc_schedule_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\scuc_schedule.csv",
+    "stochastic_uc_first_stage_schedule_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\stochastic_uc_first_stage_schedule.csv",
+    "robust_uc_first_stage_schedule_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\robust_uc_first_stage_schedule.csv",
+    "scuc_load_shedding_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\scuc_load_shedding.csv",
+    "stochastic_uc_expected_load_shedding_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\stochastic_uc_expected_load_shedding.csv",
+    "robust_uc_worst_load_shedding_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\robust_uc_worst_load_shedding.csv",
+    "stochastic_uc_scenario_summary_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\stochastic_uc_scenario_summary.csv",
+    "robust_uc_scenario_summary_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\robust_uc_scenario_summary.csv",
+    "dispatch_indicator_weights_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\dispatch_indicator_weights.csv",
+    "dispatch_model_comparison_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\dispatch_model_comparison.csv",
+    "dispatch_ewm_topsis_result_csv": "D:\\gridagent1\\result_final\\six_pdf_experiments\\dispatch_runs\\S1_load_plus20\\metapath_v1_top20_alpha0p10_beta1p00\\dispatch_ewm_topsis_result.csv"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "module": "Dispatch Optimization",
+  "objective": "min generation + reserve + startup/shutdown + load shedding penalty",
+  "inputs": {
+    "grid": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\dispatch_pressure_inputs\\grid_pressure_linecap_0p75.json",
+    "trim_input": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\dispatch_pressure_inputs\\TRIM_pressure_loadx_1p35.csv",
+    "failure_csv": "D:\\gridagent1\\gridagent_final\\stage7\\inputs\\line_failure_timeseries_schloemer.csv",
+    "uncertainty_dir": "D:\\gridagent1\\gridagent_final\\stage7\\inputs\\stage1_formal_output",
+    "line_risk_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\dispatch_pressure_inputs\\baseline_gnn_warning_line_risk_prediction.csv",
+    "time_horizon": {
+      "start": "2024-09-02 00:00:00",
+      "end": "2024-09-02 23:00:00",
+      "hours": 24
+    },
+    "stochastic_scenarios": 6,
+    "robust_set_size": 5
+  },
+  "solver": {
+    "time_limit_sec": 30.0,
+    "mip_gap": 0.02,
+    "seed": 4042
+  },
+  "strategy_mode": "contextual",
+  "strategy_rules": {
+    "stochastic_uncertainty_threshold": 0.22,
+    "stochastic_line_risk_threshold": 0.45,
+    "robust_line_risk_threshold": 0.72,
+    "robust_nk_threshold": 3.0,
+    "robust_critical_threshold": 0.22,
+    "robust_high_line_ratio_threshold": 0.3
+  },
+  "warning_context_snapshot": {
+    "max_line_risk_prob": 0.384104,
+    "high_line_ratio": 0.3333333333333333,
+    "expected_nk_fail_lines": 0.0,
+    "max_critical_outage_prob": 0.0
+  },
+  "selected_strategy_hours": [
+    {
+      "selected_strategy": "Robust_UC",
+      "hours_selected": 19
+    },
+    {
+      "selected_strategy": "SCUC",
+      "hours_selected": 5
+    }
+  ],
+  "contextual_final_metrics": {
+    "model": "Contextual_Adaptive",
+    "total_cost": 157293.91489691412,
+    "generation_cost": 835.963166662572,
+    "reserve_cost": 134.62799359084607,
+    "startup_shutdown_cost": 99662.0,
+    "load_shedding_penalty": 56661.323736660706,
+    "EENS": 36.9633601253326,
+    "critical_load_supply_rate": 0.5267987662933369,
+    "priority_index": 0.36675863476118403,
+    "robustness": 0.039042646421341254,
+    "rapidity": 0.049787068367863944,
+    "sustainability": 0.04019579239304838,
+    "reliability_score": 0.039042646421341254,
+    "overload_count": 0,
+    "max_line_loading": 0.4193498129579756,
+    "total_demand": 38.46514102595603,
+    "solve_success": true,
+    "fallback_relaxation": false,
+    "solver_status": "contextual_selection",
+    "runtime_sec": 24.6128451999939
+  },
+  "outputs": {
+    "dispatch_strategy_selection_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\dispatch_strategy_selection.csv",
+    "dispatch_active_strategy_summary_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\dispatch_active_strategy_summary.csv",
+    "contextual_dispatch_unit_schedule_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\contextual_dispatch_unit_schedule.csv",
+    "contextual_dispatch_load_shedding_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\contextual_dispatch_load_shedding.csv",
+    "contextual_dispatch_hourly_cost_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\contextual_dispatch_hourly_cost.csv",
+    "dispatch_line_flow_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\line_flow.csv",
+    "scuc_schedule_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\scuc_schedule.csv",
+    "stochastic_uc_first_stage_schedule_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\stochastic_uc_first_stage_schedule.csv",
+    "robust_uc_first_stage_schedule_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\robust_uc_first_stage_schedule.csv",
+    "scuc_load_shedding_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\scuc_load_shedding.csv",
+    "stochastic_uc_expected_load_shedding_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\stochastic_uc_expected_load_shedding.csv",
+    "robust_uc_worst_load_shedding_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\robust_uc_worst_load_shedding.csv",
+    "stochastic_uc_scenario_summary_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\stochastic_uc_scenario_summary.csv",
+    "robust_uc_scenario_summary_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\robust_uc_scenario_summary.csv",
+    "dispatch_indicator_weights_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\dispatch_indicator_weights.csv",
+    "dispatch_model_comparison_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\dispatch_model_comparison.csv",
+    "dispatch_ewm_topsis_result_csv": "D:\\gridagent1\\result_final\\paper_experiment_outputs_rerun\\stage7_dispatch_pressure_runs\\stress_load1p35_linecap0p75\\baseline_gnn_warning\\dispatch_ewm_topsis_result.csv"
+  }
+}
